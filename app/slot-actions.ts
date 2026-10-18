@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireActive } from '@/lib/auth'
 import { bookingConfirmation, sendEmail } from '@/lib/email'
 import { TZ_CZ, addDays, dayStart, mondayOf, ymd, zonedToUTC } from '@/lib/time'
+import { freeLane } from '@/lib/lanes'
 
 export type ActionResult = { error?: string; ok?: string }
 
@@ -27,12 +28,21 @@ export async function createSlot(_p: ActionResult, fd: FormData): Promise<Action
   const startsAt = zonedToUTC(y, m, d, Math.floor(minute / 60), minute % 60, TZ_CZ)
 
   const supabase = await createClient()
+
+  // Two of you, so the same hour can hold two calls. Which lane it lands
+  // in is just first or second — you sort out between yourselves who
+  // takes whom.
+  const lane = await freeLane(supabase, startsAt, duration)
+  if (lane === null) {
+    return { error: 'You already offer two calls then — that is both of you.' }
+  }
+
   const { error } = await supabase
     .from('slots')
-    .insert({ starts_at: startsAt, duration_min: duration })
+    .insert({ starts_at: startsAt, duration_min: duration, lane })
 
   if (error) {
-    // 23P01 is the exclusion constraint: this would overlap another slot.
+    // 23P01 is the exclusion constraint: that lane is already busy.
     if (error.code === '23P01') return { error: 'That overlaps a time you already offer.' }
     return { error: error.message }
   }

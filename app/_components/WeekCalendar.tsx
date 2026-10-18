@@ -71,6 +71,48 @@ export function WeekCalendar(props: Props) {
   const top = (iso: string) => ((minutesInDay(iso, tz) - startH * 60) / 60) * HOUR_H
   const height = (min: number) => Math.max(18, (min / 60) * HOUR_H - 2)
 
+  /**
+   * Winning Minds is two people, so two calls can share an hour. Times
+   * that overlap are laid out side by side, the way a calendar does it:
+   * each cluster of overlapping blocks is split into as many columns as
+   * it needs.
+   */
+  function placed(day: SlotRow[]) {
+    const sorted = [...day].sort((a, b) =>
+      a.starts_at < b.starts_at ? -1 : a.starts_at > b.starts_at ? 1 : a.duration_min - b.duration_min
+    )
+    const out = new Map<string, { col: number; cols: number }>()
+
+    let cluster: SlotRow[] = []
+    let clusterEnd = -Infinity
+
+    const flush = () => {
+      if (cluster.length === 0) return
+      const colEnds: number[] = []
+      const cols = new Map<string, number>()
+      for (const s of cluster) {
+        const start = +new Date(s.starts_at)
+        const end = start + s.duration_min * 60_000
+        let col = colEnds.findIndex((e) => e <= start)
+        if (col === -1) { col = colEnds.length; colEnds.push(end) } else colEnds[col] = end
+        cols.set(s.id, col)
+      }
+      for (const s of cluster) out.set(s.id, { col: cols.get(s.id) ?? 0, cols: colEnds.length })
+      cluster = []
+      clusterEnd = -Infinity
+    }
+
+    for (const s of sorted) {
+      const start = +new Date(s.starts_at)
+      const end = start + s.duration_min * 60_000
+      if (cluster.length > 0 && start >= clusterEnd) flush()
+      cluster.push(s)
+      clusterEnd = Math.max(clusterEnd, end)
+    }
+    flush()
+    return out
+  }
+
   const slotsOn = (d: CalDate) => {
     const key = dayKey(d)
     return slots.filter((s) => {
@@ -178,12 +220,20 @@ export function WeekCalendar(props: Props) {
                       )
                     })}
 
-                  {mine.map((s) => {
+                  {(() => { const place = placed(mine); return mine.map((s) => {
+                    const p = place.get(s.id) ?? { col: 0, cols: 1 }
+                    const span = 100 / p.cols
                     const past = new Date(s.starts_at).getTime() <= now
                     const isMine = s.booked_by === meId
                     const cls = past ? 'past' : isMine ? 'mine' : s.booking_id ? 'taken' : 'free'
                     const h = height(s.duration_min)
-                    const style = { top: top(s.starts_at), height: h }
+                    const style = {
+                      top: top(s.starts_at),
+                      height: h,
+                      left: `calc(${p.col * span}% + 2px)`,
+                      width: `calc(${span}% - 4px)`,
+                      right: 'auto' as const,
+                    }
                     const who = s.booked_name ?? (past ? 'Not used' : 'Free')
                     const body =
                       h < COMPACT_H ? (
@@ -247,7 +297,7 @@ export function WeekCalendar(props: Props) {
                         {body}
                       </div>
                     )
-                  })}
+                  }) })()}
                 </div>
               )
             })}

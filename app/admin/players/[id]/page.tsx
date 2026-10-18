@@ -6,6 +6,7 @@ import { Notes } from '@/app/_components/Notes'
 import { Tasks } from '@/app/_components/Tasks'
 import { Files } from '@/app/_components/Files'
 import { LeaveSquad } from '@/app/_components/LeaveSquad'
+import { RoleSelect, type Person } from '@/app/_components/People'
 import { createClient } from '@/lib/supabase/server'
 import { requireActive, fullName, type Profile } from '@/lib/auth'
 import { loadFiles, loadNotes, loadRoster, loadTasks, loadThread } from '@/lib/hub'
@@ -123,6 +124,21 @@ export default async function PlayerDetail({
           placeholder={`Nothing yet. Write the first message to ${player.first_name}.`}
         />
       </div>
+
+      {!player.is_owner && (
+        <div className="card">
+          <div className="hd">
+            <h3>Role</h3>
+            <span className="sub">What she can see and do</span>
+            <div style={{ marginLeft: 'auto' }}>
+              <RoleSelect
+                person={{ id: player.id, name: fullName(player), email: player.email, role: player.role, is_owner: player.is_owner } as Person}
+                isOwner={me.is_owner}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {!player.is_owner && (
         <LeaveSquad

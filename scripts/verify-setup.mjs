@@ -192,9 +192,33 @@ async function main() {
     return null
   })
 
-  await check('an overlapping time is refused', async () => {
-    const { error } = await A.client.from('slots').insert({ starts_at: at(15), duration_min: 45 })
-    if (!error) return 'the overlap was accepted'
+  await check('two of you can run calls at the same time', async () => {
+    const { data, error } = await A.client
+      .from('slots')
+      .insert({ starts_at: at(0), duration_min: 30, lane: 2 })
+      .select('id')
+      .single()
+    if (error) {
+      return error.code === '23P01' || /lane/.test(error.message)
+        ? 'a second parallel call was refused — run supabase/migrations/0007_parallel.sql'
+        : error.message
+    }
+    made.slots.push(data.id)
+    return null
+  })
+
+  await check('a third call at the same time is refused', async () => {
+    const { error } = await A.client
+      .from('slots')
+      .insert({ starts_at: at(0), duration_min: 30, lane: 2 })
+    return error ? null : 'the same lane took two calls at once'
+  })
+
+  await check('one of you cannot be in two places at once', async () => {
+    const { error } = await A.client
+      .from('slots')
+      .insert({ starts_at: at(15), duration_min: 45, lane: 1 })
+    if (!error) return 'an overlap within one lane was accepted'
     return error.code === '23P01' ? null : `refused, but with ${error.code}: ${error.message}`
   })
 

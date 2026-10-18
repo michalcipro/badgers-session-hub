@@ -3,6 +3,7 @@ import { Shell } from '@/app/_components/Shell'
 import { createClient } from '@/lib/supabase/server'
 import { requireActive, fullName, initials, type Profile } from '@/lib/auth'
 import { usDay, usTime } from '@/lib/time'
+import { AddPerson, RoleSelect, type Person } from '@/app/_components/People'
 
 export default async function PlayersPage() {
   const me = await requireActive('admin')
@@ -42,6 +43,8 @@ export default async function PlayersPage() {
         <h2>Players</h2>
         <p>Open a player for her notes, tasks, files and your conversation.</p>
       </div>
+
+      <AddPerson isOwner={me.is_owner} />
 
       <div className="card">
         <div className="hd">
@@ -106,7 +109,10 @@ export default async function PlayersPage() {
                   <div className="xs muted trunc">{p.email}</div>
                 </div>
                 {p.is_owner && <span className="pill ok">Owner</span>}
-                <span className="pill accent">{p.role === 'admin' ? 'Winning Minds' : 'Coach'}</span>
+                <RoleSelect
+                  person={{ id: p.id, name: fullName(p), email: p.email, role: p.role, is_owner: p.is_owner } as Person}
+                  isOwner={me.is_owner}
+                />
               </div>
             ))}
           </div>

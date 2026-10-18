@@ -1,5 +1,7 @@
 'use server'
 
+import { randomBytes } from 'node:crypto'
+
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -22,6 +24,94 @@ export async function approveAccount(fd: FormData) {
 
   // TODO (next step): email the person that they can sign in now.
   revalidatePath('/admin')
+}
+
+/**
+ * Creates an account outright, rather than waiting for someone to sign up.
+ *
+ * Email does not work yet, so it sets a password here and hands it back
+ * once for you to pass on. She changes it herself under Account.
+ */
+export async function createPerson(_p: AccountResult, fd: FormData): Promise<AccountResult> {
+  const me = await requireActive('admin')
+
+  const email = String(fd.get('email') ?? '').trim().toLowerCase()
+  const first_name = String(fd.get('first_name') ?? '').trim()
+  const last_name = String(fd.get('last_name') ?? '').trim()
+  const role = String(fd.get('role') ?? 'player') as Role
+  const class_year = String(fd.get('class_year') ?? '').trim()
+
+  if (!email || !first_name || !last_name) return { error: 'Fill in the name and the email.' }
+  if (!ROLES.includes(role)) return { error: 'Pick a role.' }
+  if (role === 'admin' && !me.is_owner) {
+    return { error: 'Only the owner can create a Winning Minds account.' }
+  }
+
+  // Readable but not guessable: she will change it anyway.
+  const password = randomBytes(9).toString('base64url')
+
+  const admin = createAdminClient()
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { first_name, last_name },
+  })
+
+  if (error) {
+    return {
+      error: /already|registered/i.test(error.message)
+        ? 'There is already an account with that email.'
+        : error.message,
+    }
+  }
+
+  const { error: profileError } = await admin
+    .from('profiles')
+    .update({
+      status: 'active',
+      role,
+      first_name,
+      last_name,
+      class_year: role === 'player' && class_year ? class_year : null,
+    })
+    .eq('id', data.user.id)
+
+  if (profileError) {
+    await admin.auth.admin.deleteUser(data.user.id)
+    return { error: profileError.message }
+  }
+
+  revalidatePath('/admin/players')
+  revalidatePath('/admin')
+  return {
+    ok: `${first_name} can sign in with ${email} and the password ${password} — give it to her now, it is not shown again.`,
+  }
+}
+
+/** Moves somebody between player, coach and Winning Minds. */
+export async function changeRole(_p: AccountResult, fd: FormData): Promise<AccountResult> {
+  const me = await requireActive('admin')
+  const role = String(fd.get('role') ?? '') as Role
+  if (!ROLES.includes(role)) return { error: 'Pick a role.' }
+  if (role === 'admin' && !me.is_owner) {
+    return { error: 'Only the owner can hand out the Winning Minds role.' }
+  }
+
+  const got = await targetOrRefusal(String(fd.get('id') ?? ''))
+  if ('error' in got) return got
+  if (got.target.role === role) return {}
+
+  const { error } = await got.supabase
+    .from('profiles')
+    .update({ role })
+    .eq('id', got.target.id)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin/players')
+  revalidatePath('/admin')
+  return { ok: `${got.target.first_name} is now ${role === 'admin' ? 'Winning Minds' : role}.` }
 }
 
 /**

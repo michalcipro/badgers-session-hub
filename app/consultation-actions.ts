@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireActive } from '@/lib/auth'
 import { TZ_US, zonedToUTC } from '@/lib/time'
+import { freeLane } from '@/lib/lanes'
 
 export type ConsultationResult = { error?: string; ok?: string }
 
@@ -102,12 +103,18 @@ export async function confirmConsultation(
   if (!request) return { error: 'That request is gone.' }
   if (request.status !== 'requested') return { error: 'That request has already been answered.' }
 
+  const lane = await freeLane(supabase, request.requested_at, request.duration_min)
+  if (lane === null) {
+    return { error: 'Both of you are already busy then. Decline it and suggest another time.' }
+  }
+
   const { data: slot, error: slotError } = await supabase
     .from('slots')
     .insert({
       starts_at: request.requested_at,
       duration_min: request.duration_min,
       kind: 'consultation',
+      lane,
       created_by: me.id,
     })
     .select('id')
