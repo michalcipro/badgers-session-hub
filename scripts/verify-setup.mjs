@@ -101,6 +101,8 @@ async function createPerson(p, first, last) {
 }
 
 async function cleanup() {
+  // Rows tied to a test account go with it; these are not.
+  await admin.from('files').delete().like('storage_path', `verify-%-${stamp}`)
   for (const id of made.slots) await admin.from('slots').delete().eq('id', id)
   for (const id of made.users) await admin.auth.admin.deleteUser(id).catch(() => {})
 }
@@ -326,6 +328,103 @@ async function main() {
     await A.client.from('profiles').update({ role: 'admin' }).eq('id', P.id)
     const { data } = await admin.from('profiles').select('role').eq('id', P.id).single()
     return data?.role === 'player' ? null : 'a non-owner admin promoted somebody to admin'
+  })
+
+  // --- messages, tasks, notes, files
+  console.log('\nTalking, tasks and files')
+
+  await check('the file storage bucket exists', async () => {
+    const { data, error } = await admin.storage.listBuckets()
+    if (error) return error.message
+    return data.some((b) => b.id === 'session-files')
+      ? null
+      : 'bucket "session-files" is missing — run supabase/migrations/0003_files.sql'
+  })
+
+  await check('a player can write in her own thread', async () => {
+    const { error } = await P.client
+      .from('messages')
+      .insert({ subject_id: P.id, sender_id: P.id, body: 'verification message' })
+    return error ? error.message : null
+  })
+
+  await check('a player cannot write in a teammate’s thread', async () => {
+    const { error } = await P.client
+      .from('messages')
+      .insert({ subject_id: O.id, sender_id: P.id, body: 'should not land' })
+    return error ? null : 'a player posted into a teammate’s thread'
+  })
+
+  await check('a player cannot read a teammate’s thread', async () => {
+    await A.client.from('messages').insert({ subject_id: O.id, sender_id: A.id, body: 'private to Other' })
+    const { data } = await P.client.from('messages').select('subject_id')
+    return (data ?? []).every((m) => m.subject_id === P.id)
+      ? null
+      : 'a player read a message from another thread'
+  })
+
+  await check('Winning Minds can write in a player’s thread', async () => {
+    const { error } = await A.client
+      .from('messages')
+      .insert({ subject_id: P.id, sender_id: A.id, body: 'reply from Winning Minds' })
+    return error ? error.message : null
+  })
+
+  let taskId = null
+  await check('Winning Minds can assign a task', async () => {
+    const { data, error } = await A.client
+      .from('tasks')
+      .insert({ player_id: P.id, title: 'verification task', assigned_by: A.id })
+      .select('id')
+      .single()
+    if (error) return error.message
+    taskId = data.id
+    return null
+  })
+
+  await check('a player can tick her own task off', async () => {
+    const { error } = await P.client
+      .from('tasks')
+      .update({ done_at: new Date().toISOString() })
+      .eq('id', taskId)
+    if (error) return error.message
+    const { data } = await admin.from('tasks').select('done_at').eq('id', taskId).single()
+    return data?.done_at ? null : 'the task did not get ticked'
+  })
+
+  await check('a player cannot tick a teammate’s task off', async () => {
+    const { data: t } = await A.client
+      .from('tasks')
+      .insert({ player_id: O.id, title: 'other player task', assigned_by: A.id })
+      .select('id')
+      .single()
+    await P.client.from('tasks').update({ done_at: new Date().toISOString() }).eq('id', t.id)
+    const { data } = await admin.from('tasks').select('done_at').eq('id', t.id).single()
+    return data?.done_at === null ? null : 'a player ticked off a teammate’s task'
+  })
+
+  await check('a player cannot assign herself a task', async () => {
+    const { error } = await P.client.from('tasks').insert({ player_id: P.id, title: 'self assigned' })
+    return error ? null : 'a player created her own task'
+  })
+
+  await check('a team file reaches every player, a private one does not', async () => {
+    await A.client.from('files').insert([
+      { storage_path: `verify-team-${stamp}`, name: 'team.pdf', visible_to: null, uploaded_by: A.id },
+      { storage_path: `verify-other-${stamp}`, name: 'other.pdf', visible_to: O.id, uploaded_by: A.id },
+    ])
+    const { data } = await P.client.from('files').select('name, visible_to')
+    const names = (data ?? []).map((f) => f.name)
+    if (!names.includes('team.pdf')) return 'the team file was not visible to a player'
+    if (names.includes('other.pdf')) return 'a file meant for a teammate was visible'
+    return null
+  })
+
+  await check('a player cannot upload a file herself', async () => {
+    const { error } = await P.client
+      .from('files')
+      .insert({ storage_path: `verify-bad-${stamp}`, name: 'bad.pdf', uploaded_by: P.id })
+    return error ? null : 'a player created a file row'
   })
 
   console.log('\nEverybody else')

@@ -12,9 +12,24 @@ const LINKS: Record<Profile['role'], { href: string; label: string }[]> = {
   admin: [
     { href: '/admin', label: 'Today' },
     { href: '/admin/schedule', label: 'Availability' },
+    { href: '/admin/players', label: 'Players' },
+    { href: '/admin/messages', label: 'Messages' },
+    { href: '/admin/files', label: 'Library' },
+    { href: '/account', label: 'Account' },
   ],
-  coach: [{ href: '/coach', label: 'Team' }],
-  player: [{ href: '/player', label: 'My calls' }],
+  coach: [
+    { href: '/coach', label: 'Team' },
+    { href: '/messages', label: 'Messages' },
+    { href: '/files', label: 'Resources' },
+    { href: '/account', label: 'Account' },
+  ],
+  player: [
+    { href: '/player', label: 'My calls' },
+    { href: '/messages', label: 'Messages' },
+    { href: '/tasks', label: 'Tasks' },
+    { href: '/files', label: 'Resources' },
+    { href: '/account', label: 'Account' },
+  ],
 }
 
 export function Shell({
