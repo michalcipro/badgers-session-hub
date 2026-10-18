@@ -126,6 +126,70 @@ input[type=text], input[type=email], input[type=password], select {
 .note.warn { background: var(--warn-soft); color: var(--warn) }
 .note.ok { background: var(--good-soft); color: var(--good) }
 
+/* --------------------------------------------------------- calendar */
+.calwrap { overflow-x: auto; border-top: 1px solid var(--line) }
+.cal {
+  display: grid; grid-template-columns: 62px repeat(7, minmax(0, 1fr));
+  min-width: 680px; --hh: 56px;
+}
+.cal-corner { border-bottom: 1px solid var(--line) }
+.cal-dh {
+  text-align: center; padding: 8px 4px; border-bottom: 1px solid var(--line);
+  border-left: 1px solid var(--line);
+}
+.cal-dh .dw { font-family: var(--display); font-size: 10px; font-weight: 600; letter-spacing: .09em; text-transform: uppercase; color: var(--fg-faint) }
+.cal-dh .dd { font-family: var(--display); font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.15 }
+.cal-dh.today .dd { color: var(--accent) }
+
+.cal-times { position: relative }
+.cal-hour {
+  height: var(--hh); position: relative; text-align: right; padding-right: 7px;
+  font-size: 10.5px; color: var(--fg-faint); font-variant-numeric: tabular-nums;
+}
+.cal-hour span { position: relative; top: -6px }
+.cal-col { position: relative; border-left: 1px solid var(--line) }
+.cal-col .hr { position: absolute; left: 0; right: 0; border-top: 1px solid var(--line) }
+.cal-col .hr.half { border-top-style: dotted; opacity: .6 }
+
+.cal-add {
+  position: absolute; left: 1px; right: 1px; border: 0; background: none;
+  padding: 0; cursor: pointer; border-radius: 5px;
+}
+.cal-add:hover { background: var(--good-soft); box-shadow: inset 0 0 0 1px var(--good) }
+.cal-add:hover::after { content: '+'; color: var(--good); font-weight: 700; font-size: 13px }
+
+.cal-ev {
+  position: absolute; left: 2px; right: 2px; border-radius: 7px; padding: 4px 6px;
+  font-size: 11.5px; line-height: 1.25; overflow: hidden; text-align: left;
+  border: 1px solid transparent; display: block; width: calc(100% - 4px);
+}
+.cal-ev .t { font-weight: 700; display: block; font-variant-numeric: tabular-nums }
+.cal-ev .n { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.cal-ev.free { background: var(--good-soft); color: var(--good); border-style: dashed; border-color: var(--good) }
+.cal-ev.free.can { cursor: pointer }
+.cal-ev.free.can:hover { background: var(--good); color: #fff }
+.cal-ev.taken { background: var(--accent); color: #fff }
+.cal-ev.mine { background: var(--accent); color: #fff; box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); cursor: pointer }
+.cal-ev.past { background: var(--surface-2); color: var(--fg-faint); border-color: var(--line); border-style: solid }
+
+.weeknav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
+.weeknav .lbl { font-family: var(--display); font-weight: 600; font-size: 14px; font-variant-numeric: tabular-nums }
+.weeknav a { text-decoration: none; color: inherit }
+
+/* ---------------------------------------------------------- modal */
+.scrim { position: fixed; inset: 0; background: rgba(12,9,9,.5); display: grid; place-items: center; padding: 20px; z-index: 50 }
+.modal { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 24px 60px rgba(0,0,0,.3); max-width: 410px; width: 100% }
+.modal .mb { padding: 20px }
+.modal .big { font-family: var(--display); font-size: 23px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.2; margin-top: 8px }
+.modal .ft { display: flex; gap: 8px; justify-content: flex-end; padding: 13px 20px; border-top: 1px solid var(--line); background: var(--surface-2); border-radius: 0 0 14px 14px }
+.eyebrow { font-family: var(--display); font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--fg-faint) }
+
+/* ------------------------------------------------------------- nav */
+.nav { display: flex; gap: 4px; flex-wrap: wrap }
+.nav a { text-decoration: none; padding: 6px 12px; border-radius: 7px; font-size: 13.5px; font-weight: 500; color: var(--fg-muted) }
+.nav a:hover { background: var(--surface-2); color: var(--fg) }
+.nav a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); font-weight: 600 }
+
 /* ------------------------------------------------------------- auth */
 .auth { min-height: 100svh; display: grid; place-items: center; padding: 24px 0 }
 .auth-box { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 16px }

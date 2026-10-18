@@ -20,15 +20,24 @@ Working now:
 - Every new account lands in **pending** and sees a holding screen only
 - Winning Minds approves an account and picks the role (player / coach /
   Winning Minds)
-- Each role lands on its own page; signed-out visitors are sent to sign-in
+- Weekly availability calendar: Winning Minds clicks a square to offer a
+  time and clicks it again to withdraw it, 30 / 45 / 60 minutes, arrows to
+  move between weeks
+- Players book in one tap plus a confirmation, and can release the time
+  again; one call per player per week
+- Google Meet link per time, or one link applied to a whole week
+- Booking confirmation email, and a 24-hour reminder sent by an hourly cron
 - Database schema with row-level security for the whole product
 
 Not built yet:
 
-- The weekly availability calendar and booking
-- Booking confirmation and the 24-hour reminder email
 - Messages, tasks, files, session notes
 - Czech translation, Google Meet link generation
+- Attendance marking and the coach's attendance view
+
+Known: the app still uses `middleware.ts`, which Next 16 has deprecated in
+favour of `proxy.ts`. It works and the redirect is tested; migrate with
+`npx @next/codemod@canary middleware-to-proxy .` when convenient.
 
 ## Setting it up
 
@@ -53,10 +62,23 @@ while testing, or set up SMTP so confirmation mails actually arrive.
 cp .env.example .env.local
 ```
 
-Fill in `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` from
-**Project Settings → API**. The Resend and cron values are not used yet.
+Fill in `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` and
+`SUPABASE_SERVICE_ROLE_KEY` from **Project Settings → API**. The service role
+key bypasses every access rule — it belongs on the server only, never in a
+`NEXT_PUBLIC_` variable.
 
-### 3. Run it
+### 3. Email
+
+Sign up at [resend.com](https://resend.com), verify the sending domain and
+put the API key in `RESEND_API_KEY`, with `EMAIL_FROM` set to an address at
+that domain. Without these two, booking still works and the emails are
+skipped with a warning in the log, so you can leave them empty while testing.
+
+Set `CRON_SECRET` to any long random string. On Vercel, add it as an
+environment variable and the hourly cron in `vercel.json` sends it as a
+bearer token; the reminder endpoint rejects anything else.
+
+### 4. Run it
 
 ```bash
 npm install && npm run dev

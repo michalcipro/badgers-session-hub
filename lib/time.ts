@@ -89,3 +89,19 @@ export const dayStart = (o: CalDate, tz: string) =>
 export const calFmt = (o: CalDate, opt: Intl.DateTimeFormatOptions) =>
   new Intl.DateTimeFormat('en-US', { timeZone: 'UTC', ...opt })
     .format(new Date(Date.UTC(o.y, o.m - 1, o.d)))
+
+/** Minutes since midnight in the given zone — where a slot sits in a day column. */
+export function minutesInDay(iso: string | Date, tz: string): number {
+  const p: Record<string, string> = {}
+  for (const x of new Intl.DateTimeFormat('en-GB', {
+    timeZone: tz, hourCycle: 'h23', hour: '2-digit', minute: '2-digit',
+  }).formatToParts(new Date(iso))) p[x.type] = x.value
+  return +p.hour * 60 + +p.minute
+}
+
+/** Label for an hour row, in that zone's own convention. */
+export function hourLabel(hour: number, tz: string): string {
+  if (tz === TZ_CZ) return `${String(hour).padStart(2, '0')}:00`
+  const h = hour % 12 === 0 ? 12 : hour % 12
+  return `${h} ${hour < 12 ? 'am' : 'pm'}`
+}
