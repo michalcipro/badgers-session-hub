@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from 'react'
 import { broadcastMessage, type ActionResult } from '@/app/hub-actions'
-import { Attached } from './Chat'
+import { fileSize } from './Chat'
 
 export type Recipient = {
   id: string
@@ -140,7 +140,8 @@ export function Broadcast({ people }: { people: Recipient[] }) {
 
         <label className="clip pick-file" style={{ marginTop: 10 }}>
           <span aria-hidden>📎</span>
-          <span>{picked ? picked.name : 'Attach a file'}</span>
+          <span className="trunc">{picked ? picked.name : 'Attach a file'}</span>
+          {picked ? <span className="faint xs num">{fileSize(picked.size)}</span> : null}
           <input
             type="file"
             name="file"
@@ -150,12 +151,6 @@ export function Broadcast({ people }: { people: Recipient[] }) {
             }}
           />
         </label>
-        {picked && (
-          <div style={{ marginTop: 8 }}>
-            <Attached name={picked.name} size={picked.size} />
-          </div>
-        )}
-
         {state.error && <div className="note bad" style={{ marginTop: 12 }}>{state.error}</div>}
         {state.ok && <div className="note ok" style={{ marginTop: 12 }}>{state.ok}</div>}
 

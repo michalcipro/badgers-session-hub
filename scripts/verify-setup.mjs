@@ -471,6 +471,49 @@ async function main() {
       : 'a player saw a copy addressed to somebody else'
   })
 
+  await check('a message can carry a file', async () => {
+    const { error } = await A.client.from('messages').insert({
+      subject_id: P.id,
+      sender_id: A.id,
+      body: '',
+      file_path: `verify-${stamp}.pdf`,
+      file_name: 'verify.pdf',
+      file_size: 1234,
+    })
+    if (error) {
+      return /file_path|file_name|column/.test(error.message)
+        ? 'messages carry no attachment — run supabase/migrations/0010_attachments.sql'
+        : error.message
+    }
+    return null
+  })
+
+  await check('a message with neither words nor a file is refused', async () => {
+    const { error } = await A.client
+      .from('messages')
+      .insert({ subject_id: P.id, sender_id: A.id, body: '   ' })
+    return error ? null : 'an empty message was accepted'
+  })
+
+  await check('half an attachment is refused', async () => {
+    const { error } = await A.client.from('messages').insert({
+      subject_id: P.id, sender_id: A.id, body: 'half', file_path: 'only-a-path',
+    })
+    return error ? null : 'a file path with no name was accepted'
+  })
+
+  await check('a player can attach a file in her own thread', async () => {
+    const { error } = await P.client.from('messages').insert({
+      subject_id: P.id,
+      sender_id: P.id,
+      body: 'here you go',
+      file_path: `verify-reply-${stamp}.pdf`,
+      file_name: 'reply.pdf',
+      file_size: 99,
+    })
+    return error ? error.message : null
+  })
+
   let taskId = null
   await check('Winning Minds can assign a task', async () => {
     const { data, error } = await A.client
