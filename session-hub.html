@@ -219,6 +219,26 @@ table.mx td.c{text-align:center}
   .day .slots{flex:1;flex-direction:row;flex-wrap:wrap;min-width:0}
   .chip{width:auto;flex:1 1 140px}
 }
+/* ---------- availability calendar ---------- */
+.calwrap{overflow-x:auto;border-top:1px solid var(--line)}
+.cal{display:grid;grid-template-columns:76px repeat(7,minmax(0,1fr));gap:1px;background:var(--line);min-width:660px}
+.cal>*{background:var(--surface)}
+.cal .hcell{background:var(--surface-2);padding:7px 4px;text-align:center}
+.cal .hcell .dw{font-family:var(--display);font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-faint)}
+.cal .hcell .dd{font-family:var(--display);font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+.cal .corner{background:var(--surface-2)}
+.cal .tcell{background:var(--surface-2);padding:5px 8px;text-align:right;display:flex;flex-direction:column;justify-content:center;line-height:1.2}
+.cal .tcell .cz{font-family:var(--display);font-weight:600;font-size:12.5px;font-variant-numeric:tabular-nums}
+.cal .tcell .us{font-size:10px;color:var(--fg-faint);font-variant-numeric:tabular-nums}
+.cal .cell{border:0;padding:3px;min-height:42px;cursor:pointer;display:block;width:100%;text-align:left;font:inherit;color:inherit;transition:background .1s}
+.cal .cell:hover{background:var(--good-soft)}
+.cal .cell:hover::after{content:'+';display:block;text-align:center;color:var(--good);font-weight:700;font-size:15px;line-height:36px}
+.cal .cell.has:hover::after{content:''}
+.av{display:block;border-radius:6px;padding:5px 6px;font-size:11.5px;line-height:1.25;height:100%}
+.av .nm{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.av.open{background:var(--good-soft);color:var(--good);border:1px dashed var(--good)}
+.av.taken{background:var(--accent);color:#fff}
+.av.past{background:var(--surface-2);color:var(--fg-faint);border:1px solid var(--line)}
 /* ---------- modal ---------- */
 .scrim{position:fixed;inset:0;background:rgba(12,9,9,.5);display:grid;place-items:center;padding:20px;z-index:50}
 .modal{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.3);max-width:410px;width:100%;overflow:hidden}
@@ -315,7 +335,7 @@ const roster = () => people.filter(p=>p.role==='player' && p.status==='active');
 const cycles = [
   {id:'c06', n:'06', status:'done',  note:'Completed'},
   {id:'c07', n:'07', status:'open',  note:'Booking open'},
-  {id:'c08', n:'08', status:'draft', note:'Draft — not visible to players'},
+  {id:'c08', n:'08', status:'open',  note:'Booking open'},
 ];
 const MEET = 'https://meet.google.com/';
 let slotSeq = 0;
@@ -386,9 +406,9 @@ const threads = [
 const thread = who => threads.find(t=>t.who===who) || (threads.push({who,msgs:[]}), threads[threads.length-1]);
 
 /* ============================= state ============================= */
-const state = {role:'admin', view:'today', cycle:'c07', open:null, chat:'p1', week:null, confirm:null};
+const state = {role:'admin', view:'today', open:null, chat:'p1', week:null, aweek:null, confirm:null};
 const VIEWS = {
-  admin:[['today','Today','◎'],['schedule','Schedule','▦'],['people','Players','⚇'],['messages','Messages','✉'],['library','Library','⛁'],['setup','Setup','⚙']],
+  admin:[['today','Today','◎'],['schedule','Availability','▦'],['people','Players','⚇'],['messages','Messages','✉'],['library','Library','⛁'],['setup','Setup','⚙']],
   player:[['home','My session','◎'],['messages','Messages','✉'],['tasks','Tasks','✓'],['library','Resources','⛁']],
   coach:[['team','Team','⚇'],['messages','Messages','✉']],
 };
@@ -417,23 +437,29 @@ function dual(iso, lead){ /* lead: 'cz' | 'us' */
     <div class="alt"><span class="zone"><span class="tag">${b.tag}</span>${b.t}</span> <span class="faint">· ${a.tag} time above</span></div>
   </div>`;
 }
-function gapBanner(cyc){
-  const s = slots.filter(x=>x.cycle===cyc)[0]; if(!s) return '';
-  const g = gapHours(s.at);
+/* Shown only in the weeks where the EU/US clock change is out of step. */
+function gapBannerFor(iso){
+  const g = gapHours(iso);
   if (g===7) return '';
-  return `<div class="note warn"><span>⚠</span><div><b>Clock gap is ${g} hours this cycle, not the usual 7.</b> The EU set clocks back on Oct 25, the US does it on Nov 1. Every time below is already converted — never re-count by hand during these two weeks.</div></div>`;
+  return `<div class="note warn"><span>⚠</span><div><b>Prague and Madison are ${g} hours apart this week, not the usual 7.</b> The EU and the US change clocks on different dates. Every time here is already converted — do not re-count by hand.</div></div>`;
 }
-function cycleTabs(){
-  return `<div class="row">`+cycles.map(c=>{
-    const st = c.status==='open'?'booked':c.status==='draft'?'warn':'done';
-    return `<button class="btn sm ${state.cycle===c.id?'primary':''}" data-act="cycle" data-v="${c.id}">Cycle ${c.n} <span class="pill ${state.cycle===c.id?'':st}" style="${state.cycle===c.id?'background:rgba(255,255,255,.2);color:#fff':''}">${c.note.split(' —')[0]}</span></button>`;
-  }).join('')+`</div>`;
+const upcoming = () => slots.filter(s=>+new Date(s.at)>Date.now()).sort((a,b)=>a.at<b.at?-1:1);
+const slotsBetween = (from,to) => slots.filter(s=>{const t=+new Date(s.at); return t>=from && t<to;}).sort((a,b)=>a.at<b.at?-1:1);
+
+/* A slot added in the calendar joins that week's cycle, or starts a new one. */
+function cycleForDate(iso){
+  const wk = dayKey(mondayOf(ymd(iso,TZ_CZ)));
+  const sameWeek = slots.find(s=>dayKey(mondayOf(ymd(s.at,TZ_CZ)))===wk);
+  if (sameWeek) return sameWeek.cycle;
+  const n = String(Math.max(...cycles.map(c=>+c.n))+1).padStart(2,'0');
+  const id = 'c'+n;
+  cycles.push({id, n, status:'open', note:'Booking open'});
+  return id;
 }
-const cycSlots = id => slots.filter(s=>s.cycle===id).sort((a,b)=>a.at<b.at?-1:1);
 
 /* ============================= ADMIN ============================= */
 function vToday(){
-  const open = cycSlots('c07');
+  const open = upcoming();
   const booked = open.filter(s=>s.who).length;
   const noLink = open.filter(s=>!s.meet).length;
   const notBooked = roster().filter(p=>!open.some(s=>s.who===p.id));
@@ -445,7 +471,7 @@ function vToday(){
   <div class="page-h"><h2>Today</h2><p>Saturday, 18 October 2026</p></div>
 
   <div class="grid3">
-    <div class="stat"><div class="v">${booked}/${open.length}</div><div class="k">Cycle 07 slots booked</div>
+    <div class="stat"><div class="v">${booked}/${open.length}</div><div class="k">Upcoming slots booked</div>
       <div class="bar" style="margin-top:8px"><i style="width:${Math.round(booked/open.length*100)}%"></i></div></div>
     <div class="stat"><div class="v">${pend.length}</div><div class="k">Accounts awaiting approval</div></div>
     <div class="stat"><div class="v">${unread.length}</div><div class="k">Threads waiting on a reply</div></div>
@@ -469,13 +495,13 @@ function vToday(){
 
   <div class="grid2">
     <div class="card"><div class="hd"><h2>Needs your attention</h2></div><div class="list">
-      ${noLink?`<div class="it"><span class="pill warn">Meet link</span><div class="grow sm">${noLink} slot${noLink>1?'s':''} in Cycle 07 ${noLink>1?'have':'has'} no Google Meet link</div><button class="btn sm" data-act="go" data-v="schedule">Fix</button></div>`:''}
-      ${notBooked.length?`<div class="it"><span class="pill info">Booking</span><div class="grow sm">${notBooked.map(p=>esc(p.first)).join(', ')} ${notBooked.length>1?'have':'has'} not booked Cycle 07</div><button class="btn sm" data-act="nudge">Send reminder</button></div>`:''}
+      ${noLink?`<div class="it"><span class="pill warn">Meet link</span><div class="grow sm">${noLink} upcoming slot${noLink>1?'s':''} ${noLink>1?'have':'has'} no Google Meet link</div><button class="btn sm" data-act="go" data-v="schedule">Fix</button></div>`:''}
+      ${notBooked.length?`<div class="it"><span class="pill info">Booking</span><div class="grow sm">${notBooked.map(p=>esc(p.first)).join(', ')} ${notBooked.length>1?'have':'has'} no slot booked</div><button class="btn sm" data-act="nudge">Send reminder</button></div>`:''}
       ${overdue.map(t=>`<div class="it"><span class="pill accent">Task</span><div class="grow sm trunc">${esc(short(t.who))} — ${esc(t.title)} (due ${esc(t.due)})</div></div>`).join('')}
       ${unread.map(t=>`<div class="it click" data-act="chat" data-v="${t.who}"><span class="pill booked">Reply</span><div class="grow sm trunc">${esc(short(t.who))}: "${esc(t.msgs[t.msgs.length-1].text)}"</div></div>`).join('')}
     </div></div>
 
-    <div class="card"><div class="hd"><h2>Next calls</h2><span class="sub">Cycle 07 · Oct 28–29</span></div>
+    <div class="card"><div class="hd"><h2>Next calls</h2></div>
       <div class="list">${open.filter(s=>s.who).slice(0,4).map(s=>`
         <div class="it"><div class="avatar">${inits(s.who)}</div>
           <div class="grow"><div class="nm">${esc(full(s.who))}</div>
@@ -488,23 +514,72 @@ function vToday(){
   </div>`;
 }
 
+const DAY_HOURS = [13,14,15,16,17,18,19,20,21];   // Prague hours offered in the calendar
+
+function ensureAWeek(){
+  if (state.aweek) return;
+  const next = upcoming()[0];
+  state.aweek = mondayOf(ymd(next ? next.at : new Date().toISOString(), TZ_CZ));
+}
+
 function vSchedule(){
-  const cyc = cycles.find(c=>c.id===state.cycle);
-  const ss = cycSlots(state.cycle);
+  ensureAWeek();
+  const mon = state.aweek, days = [...Array(7)].map((_,i)=>addDays(mon,i));
+  const ss = slotsBetween(dayStart(mon,TZ_CZ), dayStart(addDays(mon,7),TZ_CZ));
   const booked = ss.filter(s=>s.who).length;
+  const label = `${calFmt(mon,{month:'short',day:'numeric'})} – ${calFmt(addDays(mon,6),{month:'short',day:'numeric'})}`;
+  const now = Date.now();
+  const cellAt = (d,h)=>{
+    const a = +new Date(zonedToUTC(d.y,d.m,d.d,h,0,TZ_CZ));
+    const b = +new Date(zonedToUTC(d.y,d.m,d.d,h+1,0,TZ_CZ));
+    return ss.find(s=>{const t=+new Date(s.at); return t>=a && t<b;});
+  };
+
   return `
-  <div class="page-h"><h2>Schedule</h2><p>You create the slots in Prague time. Players always see their own.</p></div>
-  ${cycleTabs()}
-  ${gapBanner(state.cycle)}
+  <div class="page-h"><h2>Your availability</h2><p>Click a square to offer that time. Click it again to take it back.</p></div>
+  ${gapBannerFor(zonedToUTC(mon.y,mon.m,mon.d,12,0,TZ_CZ))}
 
   <div class="card">
     <div class="hd">
-      <h2>Cycle ${cyc.n}</h2>
-      <span class="pill ${cyc.status==='open'?'booked':cyc.status==='draft'?'warn':'done'}">${esc(cyc.note)}</span>
-      <span class="sub num">${booked}/${ss.length} booked</span>
-      <div style="margin-left:auto" class="row">
-        ${cyc.status==='draft'?`<button class="btn sm primary" data-act="publish" data-v="${cyc.id}">Open booking to players</button>`:''}
-        ${cyc.status==='open'?`<button class="btn sm" data-act="nudge">Remind unbooked</button>`:''}
+      <div class="weeknav">
+        <button class="btn sm" data-act="aweek" data-v="-1" aria-label="Previous week">←</button>
+        <span class="lbl">${label}</span>
+        <button class="btn sm" data-act="aweek" data-v="1" aria-label="Next week">→</button>
+        <button class="btn sm ghost" data-act="athis">This week</button>
+      </div>
+      <span class="sub num">${ss.length} slot${ss.length===1?'':'s'} · ${booked} booked</span>
+      <label class="fld" style="margin-left:auto;flex:0 0 108px">Length
+        <select id="av-dur"><option value="30">30 min</option><option value="45" selected>45 min</option><option value="60">60 min</option></select></label>
+    </div>
+    <div class="calwrap"><div class="cal">
+      <div class="corner"></div>
+      ${days.map(d=>`<div class="hcell"><div class="dw">${calFmt(d,{weekday:'short'})}</div><div class="dd">${d.d}</div></div>`).join('')}
+      ${DAY_HOURS.map(h=>`
+        <div class="tcell">
+          <span class="cz">${String(h).padStart(2,'0')}:00</span>
+          <span class="us">${usTime(zonedToUTC(mon.y,mon.m,mon.d,h,0,TZ_CZ))}</span>
+        </div>
+        ${days.map(d=>{
+          const s = cellAt(d,h);
+          if (!s) return `<button class="cell" data-act="addcell" data-v="${d.y}-${d.m}-${d.d}-${h}" aria-label="Offer ${calFmt(d,{weekday:'long'})} ${h}:00 Prague"></button>`;
+          const past = +new Date(s.at) < now;
+          return `<button class="cell has" data-act="rmcell" data-v="${s.id}" title="${czTime(s.at)} Prague · ${usTime(s.at)} Madison">
+            <span class="av ${past?'past':s.who?'taken':'open'}">
+              <span class="nm">${s.who?esc(short(s.who)):'Open'}</span>
+              <span class="num" style="opacity:.75">${s.dur} min</span>
+            </span></button>`;
+        }).join('')}`).join('')}
+    </div></div>
+    <div class="bd" style="border-top:1px solid var(--line)">
+      <p class="xs muted">Times on the left are yours in Prague, with the same hour in Madison underneath. Players only ever see the open squares.</p>
+    </div>
+  </div>
+
+  ${ss.length?`<div class="card">
+    <div class="hd"><h2>This week's slots</h2>
+      <div class="row" style="margin-left:auto">
+        <input type="text" id="bulk-meet" placeholder="One Meet link for the whole week…" style="max-width:250px">
+        <button class="btn sm" data-act="bulklink">Apply to all</button>
       </div>
     </div>
     <div class="bd tight">${ss.map(s=>`
@@ -514,7 +589,7 @@ function vSchedule(){
           <div class="row" style="gap:7px">
             ${s.who?`<span class="pill booked">${esc(full(s.who))}</span>`:`<span class="pill open">Open</span>`}
             <span class="xs muted num">${s.dur} min · ends ${czTime(endOf(s.at,s.dur))} Prague</span>
-            ${s.cycle==='c06'?(s.attended?`<span class="pill done">Attended</span>`:`<span class="pill warn">No-show</span>`):''}
+            ${+new Date(s.at)<now && s.who?(s.attended?`<span class="pill done">Attended</span>`:`<span class="pill warn">No-show</span>`):''}
           </div>
           <div class="row" style="gap:6px">
             ${s.meet
@@ -527,27 +602,15 @@ function vSchedule(){
                    <button class="btn sm ghost" data-act="release" data-v="${s.id}">Release</button>`
                  :`<button class="btn sm ghost" data-act="delslot" data-v="${s.id}">Delete</button>`}
         </div>
-      </div>`).join('') || `<div class="bd muted sm">No slots yet.</div>`}
+      </div>`).join('')}
     </div>
-  </div>
-
-  <div class="card"><div class="hd"><h2>Add a slot</h2><span class="sub">Entered in Prague time — the Madison time is computed for you</span></div>
-  <div class="bd">
-    <div class="row" style="align-items:flex-end;gap:12px">
-      <label class="fld" style="flex:1 1 150px">Date<input type="date" id="ns-date" value="2026-11-11"></label>
-      <label class="fld" style="flex:0 1 120px">Time (Prague)<input type="time" id="ns-time" value="18:00" step="900"></label>
-      <label class="fld" style="flex:0 1 110px">Minutes<input type="number" id="ns-dur" value="45" min="15" max="120" step="5"></label>
-      <label class="fld" style="flex:1 1 200px">Google Meet link<input type="text" id="ns-meet" placeholder="optional, can be added later"></label>
-      <button class="btn primary" data-act="addslot">Add to Cycle ${cyc.n}</button>
-    </div>
-    <div class="note info" style="margin-top:12px"><span>⟳</span><div id="ns-preview">—</div></div>
-  </div></div>`;
+  </div>`:''}`;
 }
 
 function vPeople(){
   if (state.open) return vPlayer(state.open);
   const list = people.filter(p=>p.role!=='admin');
-  const c7 = cycSlots('c07');
+  const c7 = upcoming();
   return `
   <div class="page-h"><h2>Players &amp; staff</h2><p>Sample roster for the prototype.</p></div>
   <div class="card"><div class="bd tight"><div class="list">
@@ -562,7 +625,7 @@ function vPeople(){
         ${p.status==='pending'
           ? `<span class="pill warn">Awaiting approval</span><button class="btn sm primary" data-act="approve" data-v="${p.id}">Approve</button>`
           : `<div class="xs muted num" style="text-align:right">
-               ${p.role==='player' ? (s?`Cycle 07 · ${usDay(s.at)} ${usTime(s.at)}`:`<span class="pill open">Not booked</span>`) : 'Staff account'}
+               ${p.role==='player' ? (s?`Next · ${usDay(s.at)} ${usTime(s.at)}`:`<span class="pill open">Not booked</span>`) : 'Staff account'}
              </div>
              ${t?`<span class="pill accent num">${t} task${t>1?'s':''}</span>`:''}
              ${th&&th.msgs.length&&th.msgs[th.msgs.length-1].from===p.id?`<span class="pill booked">New</span>`:''}`}
@@ -725,7 +788,6 @@ function weekGrid(){
   const from = dayStart(mon,TZ_US), to = dayStart(addDays(mon,7),TZ_US);
   const inWeek = playerSlots().filter(s=>{const t=+new Date(s.at); return t>=from && t<to;}).sort((a,b)=>a.at<b.at?-1:1);
   const free = inWeek.filter(s=>!s.who && cycles.find(c=>c.id===s.cycle).status==='open').length;
-  const cycNames = [...new Set(inWeek.map(s=>s.cycle))].map(id=>{const c=cycles.find(x=>x.id===id);return `<span class="pill ${c.status==='open'?'booked':'done'}">Cycle ${c.n}</span>`;}).join('');
   const label = `${calFmt(mon,{month:'short',day:'numeric'})} – ${calFmt(addDays(mon,6),{month:'short',day:'numeric'})}`;
   const keys = weekKeys(), here = dayKey(mon);
   const prev = keys.filter(k=>k<here).pop(), next = keys.find(k=>k>here);
@@ -737,7 +799,6 @@ function weekGrid(){
         <span class="lbl">${label}</span>
         <button class="btn sm" data-act="week" data-v="1" aria-label="Next week">→</button>
       </div>
-      ${cycNames}
       <span class="sub" style="margin-left:auto">${free?`${free} free slot${free>1?'s':''} this week`:'No free slots this week'}</span>
     </div>
     ${inWeek.length ? `<div class="week">${days.map(d=>{
@@ -779,9 +840,8 @@ function modal(){
 
 function vHome(){
   const me = ME.player;
-  const c7 = cycSlots('c07');
-  const mine = c7.find(s=>s.who===me);
-  const past = slots.filter(s=>s.who===me && s.cycle==='c06');
+  const mine = upcoming().find(s=>s.who===me);
+  const past = slots.filter(s=>s.who===me && +new Date(s.at)<Date.now()).sort((a,b)=>a.at<b.at?1:-1);
   const myTasks = tasks.filter(t=>t.who===me && !t.done);
 
   return `
@@ -804,7 +864,7 @@ function vHome(){
       <p class="xs" style="margin-top:10px;color:var(--accent)">The Join button opens 10 minutes before the call. You will also get an email reminder the day before.</p>
     </div>
   </div>` : `
-  <div class="note accent"><span>◎</span><div><b>You have not booked Cycle 07 yet.</b> Pick a time below — first come, first served.</div></div>`}
+  <div class="note accent"><span>◎</span><div><b>You have no call booked.</b> Pick a green time below — first come, first served.</div></div>`}
 
   ${weekGrid()}
 
@@ -818,7 +878,7 @@ function vHome(){
 
     <div class="card"><div class="hd"><h2>Past sessions</h2></div><div class="list">
       ${past.map(s=>`<div class="it"><div class="grow"><div class="nm num">${usDay(s.at)} · ${usTime(s.at)}</div>
-        <div class="xs muted">Cycle 06 · ${s.dur} min</div></div><span class="pill done">Done</span></div>`).join('')
+        <div class="xs muted num">${s.dur} min</div></div><span class="pill done">${s.attended===false?'Missed':'Done'}</span></div>`).join('')
         ||'<div class="bd sm muted">No sessions yet.</div>'}
     </div></div>
   </div>`;
@@ -841,24 +901,25 @@ function vTasks(){
 
 /* ============================= COACH ============================= */
 function vTeam(){
-  const c7 = cycSlots('c07'), c6 = cycSlots('c06');
+  const c7 = upcoming();
+  const c6 = slots.filter(s=>+new Date(s.at)<Date.now() && s.who);
   const bookedN = c7.filter(s=>s.who).length;
   const attended = c6.filter(s=>s.attended).length;
   return `
   <div class="page-h"><h2>Team overview</h2><p>Booking and attendance only. Session content stays between the player and Winning Minds.</p></div>
   <div class="grid3">
-    <div class="stat"><div class="v num">${bookedN}/${roster().length}</div><div class="k">Booked for Cycle 07</div></div>
-    <div class="stat"><div class="v num">${Math.round(attended/c6.length*100)}%</div><div class="k">Attendance, Cycle 06</div></div>
+    <div class="stat"><div class="v num">${bookedN}/${roster().length}</div><div class="k">Booked for the next round</div></div>
+    <div class="stat"><div class="v num">${c6.length?Math.round(attended/c6.length*100):0}%</div><div class="k">Attendance so far</div></div>
     <div class="stat"><div class="v num">${c7.filter(s=>!s.who).length}</div><div class="k">Slots still open</div></div>
   </div>
   <div class="note info"><span>🔒</span><div>You see names, times and attendance. Notes, tasks, files and messages between a player and Winning Minds are not visible to coaching staff.</div></div>
-  <div class="card"><div class="hd"><h2>Cycle 07 · Oct 28–29</h2></div><div class="list">
+  <div class="card"><div class="hd"><h2>Next round of calls</h2></div><div class="list">
     ${roster().map(p=>{
       const s = c7.find(x=>x.who===p.id);
       const was = c6.find(x=>x.who===p.id);
       return `<div class="it"><div class="avatar">${inits(p.id)}</div>
         <div class="grow"><div class="nm">${esc(full(p.id))}</div>
-          <div class="xs muted">${was?(was.attended?'Attended Cycle 06':'Missed Cycle 06'):'No Cycle 06 session'}</div></div>
+          <div class="xs muted">${was?(was.attended?'Attended last call':'Missed last call'):'No calls yet'}</div></div>
         ${s?`<div class="xs num" style="text-align:right">${usDay(s.at)}<br><span class="muted">${usTime(s.at)}</span></div><span class="pill booked">Booked</span>`
            :`<span class="pill warn">Not booked</span>`}</div>`;
     }).join('')}
@@ -941,16 +1002,6 @@ function render(){
   };
   document.getElementById('main').innerHTML = (map[state.role+':'+state.view]||(()=>''))() + (state.role==='player'?modal():'');
   const c = document.getElementById('chat'); if (c) c.scrollTop = c.scrollHeight;
-  previewSlot();
-}
-
-function previewSlot(){
-  const d = document.getElementById('ns-date'), t = document.getElementById('ns-time'), out = document.getElementById('ns-preview');
-  if (!d||!t||!out) return;
-  const [y,m,dd]=d.value.split('-').map(Number), [hh,mi]=t.value.split(':').map(Number);
-  if (!y||!hh&&hh!==0) { out.textContent='—'; return; }
-  const iso = zonedToUTC(y,m,dd,hh,mi,TZ_CZ);
-  out.innerHTML = `<b>${czDay(iso)} ${czTime(iso)}</b> in Prague is <b>${usDay(iso)} ${usTime(iso)}</b> in Madison — ${gapHours(iso)} hours apart that week.`;
 }
 
 /* ============================= actions ============================= */
@@ -960,7 +1011,24 @@ document.addEventListener('click', e=>{
 
   if (a==='role'){ state.role=v; state.open=null; state.confirm=null; state.view=VIEWS[v][0][0]; render(); return; }
   if (a==='go'){ state.view=v; state.open=null; state.confirm=null; render(); return; }
-  if (a==='cycle'){ state.cycle=v; render(); return; }
+  if (a==='aweek'){ state.aweek=addDays(state.aweek, 7*(+v)); render(); return; }
+  if (a==='athis'){ state.aweek=mondayOf(ymd(new Date().toISOString(),TZ_CZ)); render(); return; }
+  if (a==='addcell'){
+    const [y,m,d,h]=v.split('-').map(Number);
+    const iso=zonedToUTC(y,m,d,h,0,TZ_CZ);
+    const dur=+(document.getElementById('av-dur')||{}).value||45;
+    slots.push({id:'s'+(++slotSeq), cycle:cycleForDate(iso), at:iso, dur, meet:'', who:null});
+    render(); return; }
+  if (a==='rmcell'){
+    const s=slots.find(x=>x.id===v);
+    if (s.who){ toast(full(s.who)+' is booked here — release the slot below first'); return; }
+    slots.splice(slots.indexOf(s),1); render(); return; }
+  if (a==='bulklink'){
+    const link=document.getElementById('bulk-meet').value.trim();
+    if(!link){ toast('Paste a Meet link first'); return; }
+    const ss=slotsBetween(dayStart(state.aweek,TZ_CZ), dayStart(addDays(state.aweek,7),TZ_CZ));
+    ss.forEach(s=>s.meet=link);
+    toast(`Link set on ${ss.length} slot${ss.length===1?'':'s'}`); render(); return; }
   if (a==='openp'){ state.open=v; state.view='people'; render(); return; }
   if (a==='closep'){ state.open=null; render(); return; }
   if (a==='chat'){ state.chat=v; state.view='messages'; state.open=null; render(); return; }
@@ -988,14 +1056,6 @@ document.addEventListener('click', e=>{
   if (a==='copy'){ const s=slots.find(x=>x.id===v);
     (navigator.clipboard?.writeText(s.meet)||Promise.reject()).then(()=>toast('Link copied')).catch(()=>toast(s.meet)); return; }
   if (a==='delslot'){ slots.splice(slots.findIndex(x=>x.id===v),1); toast('Slot removed'); render(); return; }
-  if (a==='addslot'){
-    const d=document.getElementById('ns-date').value, t=document.getElementById('ns-time').value;
-    if(!d||!t){ toast('Pick a date and time'); return; }
-    const [y,m,dd]=d.split('-').map(Number), [hh,mi]=t.split(':').map(Number);
-    slots.push({id:'s'+(++slotSeq), cycle:state.cycle, at:zonedToUTC(y,m,dd,hh,mi,TZ_CZ),
-      dur:+document.getElementById('ns-dur').value||45, meet:document.getElementById('ns-meet').value.trim(), who:null});
-    toast('Slot added'); render(); return; }
-  if (a==='publish'){ const c=cycles.find(x=>x.id===v); c.status='open'; c.note='Booking open'; toast('Players can now book Cycle '+c.n); render(); return; }
   if (a==='nudge'){ toast('Reminder emailed to players without a slot'); return; }
   if (a==='join'){ toast('Opens 10 minutes before the call'); return; }
   if (a==='dl'){ toast('Opens in the real app'); return; }
@@ -1019,7 +1079,6 @@ document.addEventListener('change', e=>{
   const t = tasks.find(x=>x.id===el.dataset.v); t.done = el.checked;
   toast(t.done?'Marked done':'Reopened'); render();
 });
-document.addEventListener('input', e=>{ if(e.target.id==='ns-date'||e.target.id==='ns-time') previewSlot(); });
 document.addEventListener('keydown', e=>{
   if(e.key==='Escape' && state.confirm){ state.confirm=null; render(); return; }
   if(e.target.id==='cm' && e.key==='Enter' && !e.shiftKey){ e.preventDefault();
