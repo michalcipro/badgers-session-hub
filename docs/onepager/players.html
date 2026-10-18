@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Session Hub — how it works</title>
+<style>
+  @page { size: A4; margin: 14mm 15mm; }
+  * { box-sizing: border-box }
+  html, body { margin: 0; padding: 0 }
+  body {
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    color: #111114; font-size: 11pt; line-height: 1.46;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .top { display: flex; align-items: center; gap: 11px; padding-bottom: 9px; border-bottom: 2.5px solid #c5050c }
+  .top img.wm { height: 25px }
+  .top img.mw { height: 32px }
+  .top .bar { width: 1px; height: 26px; background: #d8d8dd }
+  .top .right { margin-left: auto; text-align: right }
+  .top .right b { display: block; font-size: 14pt; letter-spacing: -.02em }
+  .top .right span { font-size: 8.4pt; color: #6a6a74; letter-spacing: .06em; text-transform: uppercase }
+
+  h1 { font-size: 23pt; margin: 20px 0 3px; letter-spacing: -.03em }
+  .lede { font-size: 11.6pt; color: #4a4a54; margin: 0 0 17px; max-width: 150mm }
+
+  .cols { column-count: 2; column-gap: 9mm }
+  section { break-inside: avoid; margin-bottom: 15px }
+  h2 {
+    font-size: 9pt; letter-spacing: .1em; text-transform: uppercase;
+    color: #c5050c; margin: 0 0 5px; font-weight: 800;
+  }
+  p { margin: 0 0 5px }
+  ol, ul { margin: 0 0 4px; padding-left: 15px }
+  li { margin-bottom: 2px }
+  b { font-weight: 700 }
+  .k { color: #6a6a74 }
+
+  .note {
+    border-left: 2.5px solid #c5050c; background: #fdf1f1;
+    padding: 9px 12px; margin: 0 0 15px; break-inside: avoid;
+  }
+  .note p:last-child { margin-bottom: 0 }
+
+  .chip {
+    display: inline-block; border: 1px dashed #11724f; background: #e9f5ef; color: #11724f;
+    border-radius: 6px; padding: 1px 8px; font-weight: 700; font-size: 10pt;
+  }
+  .chip.red { border: 1px solid #c5050c; background: #c5050c; color: #fff }
+
+  footer {
+    margin-top: 14px; padding-top: 9px; border-top: 1px solid #e0e0e6;
+    display: flex; gap: 10px; align-items: baseline; font-size: 9.2pt; color: #6a6a74;
+  }
+  footer b { color: #111114 }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <img class="wm" src="winning-minds.png" alt="Winning Minds">
+  <span class="bar"></span>
+  <img class="mw" src="motion-w.png" alt="Wisconsin Badgers">
+  <div class="right">
+    <b>Session Hub</b>
+    <span>How it works</span>
+  </div>
+</div>
+
+<h1>Your calls, in one place.</h1>
+<p class="lede">
+  Session Hub is where you book your call with Winning Minds, and your private line to
+  Michal and Milan in between. It takes about a minute to learn.
+</p>
+
+<div class="note">
+  <p><b>Everything is shown in Madison time.</b> Prague is six or seven hours ahead depending
+  on the month, and the app has already done that sum. Book the time you see.</p>
+</div>
+
+<div class="cols">
+
+  <section>
+    <h2>Getting in</h2>
+    <p>Go to <b>winningmindsperformance.com</b> and sign in with the email and password
+    Mára sent you.</p>
+    <p>Change that password straight away under <b>Account → Change your password</b>. Pick
+    something you do not use anywhere else.</p>
+  </section>
+
+  <section>
+    <h2>Booking a call</h2>
+    <ol>
+      <li>Open <b>My calls</b>.</li>
+      <li>Tap a green time, like <span class="chip">8:00 AM ○○</span></li>
+      <li>Check the details and tap <b>Confirm booking</b>.</li>
+    </ol>
+    <p>That is it — you are booked. First come, first served.</p>
+  </section>
+
+  <section>
+    <h2>What the dots mean</h2>
+    <p>Michal and Milan both run calls, so one time can hold two places.</p>
+    <p><span class="chip">○○</span> both free &nbsp; <span class="chip">●○</span> one left
+    &nbsp; <span class="chip red">●●</span> gone</p>
+    <p>A time with no dots has a single place.</p>
+  </section>
+
+  <section>
+    <h2>Changing your mind</h2>
+    <p>Your booked call is the red one, marked <b>Yours</b>. Tap it to give it back, and
+    somebody else can take it.</p>
+    <p>You hold <b>one call per week</b>. Booking another in the same week moves you — the
+    app will say so before it does.</p>
+  </section>
+
+  <section>
+    <h2>Joining on the day</h2>
+    <p>The Google Meet link appears on the <b>Your next call</b> card at the top of
+    <b>My calls</b>. The Join button opens ten minutes before the start.</p>
+    <p>If it still says the link is coming, it is on its way — message us if the call is
+    close.</p>
+  </section>
+
+  <section>
+    <h2>Messages</h2>
+    <p>Your thread under <b>Messages</b> goes to Michal and Milan and nobody else. Not your
+    teammates, not your coaches.</p>
+    <p>You can send a file with it too.</p>
+  </section>
+
+  <section>
+    <h2>Tasks and Resources</h2>
+    <p><b>Tasks</b> are what we agree between calls. Tick one off when it is done.</p>
+    <p><b>Resources</b> holds anything we have shared with you to read or watch.</p>
+  </section>
+
+  <section>
+    <h2>Who sees what</h2>
+    <ul>
+      <li><b>Teammates</b> see only each other’s names on the calendar — nothing else.</li>
+      <li><b>Coaches</b> see who booked and who turned up. They never see what is said in a
+      call, in a message, or in a note.</li>
+      <li><b>Winning Minds</b> sees your bookings, your messages and your tasks.</li>
+    </ul>
+  </section>
+
+</div>
+
+<footer>
+  <b>winningmindsperformance.com</b>
+  <span>Forgotten your password, or something not working? Message Mára.</span>
+</footer>
+
+</body>
+</html>
