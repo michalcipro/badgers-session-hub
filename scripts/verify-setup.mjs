@@ -427,6 +427,69 @@ async function main() {
     return error ? null : 'a player created a file row'
   })
 
+  // --- consultations
+  console.log('\nCoach consultations')
+
+  const coach = await createPerson(
+    { email: `verify-coach-${stamp}@example.com`, password: `Vf!${stamp}eE`, role: 'coach' },
+    'Verify', 'Coach'
+  )
+
+  const soon = new Date(Date.now() + 10 * 24 * 3600_000).toISOString()
+  let consultId = null
+
+  await check('a coach can ask for a time of her own', async () => {
+    const { data, error } = await coach.client
+      .from('consultations')
+      .insert({ coach_id: coach.id, requested_at: soon, duration_min: 45, topic: 'verification' })
+      .select('id, status')
+      .single()
+    if (error) return `${error.message} — run supabase/migrations/0005_consultations.sql`
+    consultId = data.id
+    return data.status === 'requested' ? null : `it started as "${data.status}"`
+  })
+
+  await check('she cannot confirm her own request', async () => {
+    if (!consultId) return 'no request to test with'
+    await coach.client.from('consultations').update({ status: 'confirmed' }).eq('id', consultId)
+    const { data } = await admin.from('consultations').select('status').eq('id', consultId).single()
+    return data?.status === 'requested' ? null : `she set it to "${data?.status}"`
+  })
+
+  await check('a player cannot ask for a consultation', async () => {
+    const { error } = await P.client
+      .from('consultations')
+      .insert({ coach_id: P.id, requested_at: soon, duration_min: 45 })
+    return error ? null : 'a player created a consultation request'
+  })
+
+  await check('a player cannot read a coach’s request', async () => {
+    const { data } = await P.client.from('consultations').select('id')
+    return (data ?? []).length === 0 ? null : 'a player read a consultation request'
+  })
+
+  await check('Winning Minds can confirm it', async () => {
+    if (!consultId) return 'no request to test with'
+    const { data: slot, error: slotErr } = await A.client
+      .from('slots')
+      .insert({ starts_at: soon, duration_min: 45, kind: 'consultation' })
+      .select('id')
+      .single()
+    if (slotErr) return slotErr.message
+    made.slots.push(slot.id)
+    const { error } = await A.client
+      .from('consultations')
+      .update({ status: 'confirmed', slot_id: slot.id, decided_by: A.id })
+      .eq('id', consultId)
+    return error ? error.message : null
+  })
+
+  await check('a player cannot book a consultation time', async () => {
+    const slotId2 = made.slots[made.slots.length - 1]
+    const { error } = await P.client.from('bookings').insert({ slot_id: slotId2, player_id: P.id })
+    return error ? null : 'a player booked a time reserved for a coach'
+  })
+
   // --- leaving the squad
   console.log('\nLeaving the squad')
 

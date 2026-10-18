@@ -8,6 +8,7 @@ export type SlotRow = {
   starts_at: string
   duration_min: number
   meet_url: string | null
+  kind: 'player' | 'consultation'
   booking_id: string | null
   booked_by: string | null
   attended: boolean | null

@@ -199,6 +199,15 @@ export function WeekCalendar(props: Props) {
                         </>
                       )
 
+                    if (s.kind === 'consultation') {
+                      return (
+                        <div key={s.id} className={`cal-ev ${past ? 'past' : 'consult'}`} style={style}
+                          title={`${czTime(s.starts_at)} Prague · ${usTime(s.starts_at)} Madison`}>
+                          {body}
+                        </div>
+                      )
+                    }
+
                     if (mode === 'admin' && !s.booking_id && !past) {
                       return (
                         <form action={delAction} key={s.id}>

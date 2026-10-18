@@ -251,3 +251,10 @@ table.mx th {
   text-transform: uppercase; color: var(--fg-faint); font-weight: 600;
 }
 table.mx td.c, table.mx th.c { text-align: center }
+
+/* A confirmed coach consultation: occupies the calendar, but is not a player's call. */
+.cal-ev.consult { background: var(--info-soft, #e9effa); color: var(--info, #2d5a9e); border: 1px solid currentColor }
+:root { --info:#2d5a9e; --info-soft:#e9effa }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --info:#7ea7e8; --info-soft:#17212f } }
+:root[data-theme="dark"] { --info:#7ea7e8; --info-soft:#17212f }
+.pill.info { background: var(--info-soft); color: var(--info) }

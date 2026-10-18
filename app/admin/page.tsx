@@ -2,6 +2,7 @@ import { Shell } from '@/app/_components/Shell'
 import { createClient } from '@/lib/supabase/server'
 import { requireActive, fullName, initials, type Profile } from '@/lib/auth'
 import { approveAccount, declineAccount } from './actions'
+import { ConsultationQueue, type PendingConsultation } from '@/app/_components/ConsultationQueue'
 
 const ROLE_LABEL: Record<Profile['role'], string> = {
   admin: 'Winning Minds',
@@ -13,12 +14,24 @@ export default async function AdminPage() {
   const me = await requireActive('admin')
   const supabase = await createClient()
 
-  const { data } = await supabase
-    .from('profiles')
-    .select('*')
-    .order('created_at', { ascending: true })
+  const [{ data }, { data: pendingConsults }] = await Promise.all([
+    supabase.from('profiles').select('*').order('created_at', { ascending: true }),
+    supabase
+      .from('consultations')
+      .select('id, requested_at, duration_min, topic, coach_id')
+      .eq('status', 'requested')
+      .gt('requested_at', new Date().toISOString())
+      .order('requested_at'),
+  ])
 
   const everyone = (data ?? []) as Profile[]
+  const byId = new Map(everyone.map((p) => [p.id, p]))
+  const consultations: PendingConsultation[] = (
+    (pendingConsults ?? []) as { id: string; requested_at: string; duration_min: number; topic: string | null; coach_id: string }[]
+  ).map((c) => {
+    const coach = byId.get(c.coach_id)
+    return { ...c, coachName: coach ? fullName(coach) : 'A coach' }
+  })
   const pending = everyone.filter((p) => p.status === 'pending')
   const active = everyone.filter((p) => p.status === 'active')
   const players = active.filter((p) => p.role === 'player')
@@ -66,6 +79,8 @@ export default async function AdminPage() {
           </div>
         )}
       </div>
+
+      {consultations.length > 0 && <ConsultationQueue rows={consultations} />}
 
       <div className="card">
         <div className="hd">

@@ -20,6 +20,7 @@ const LINKS: Record<Profile['role'], { href: string; label: string }[]> = {
   ],
   coach: [
     { href: '/coach', label: 'Team' },
+    { href: '/coach/consultations', label: 'Consultations' },
     { href: '/messages', label: 'Messages' },
     { href: '/files', label: 'Resources' },
     { href: '/account', label: 'Account' },
