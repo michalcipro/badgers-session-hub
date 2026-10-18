@@ -6,10 +6,10 @@ import { requireActive } from '@/lib/auth'
 import { bookingConfirmation, sendEmail } from '@/lib/email'
 import { TZ_CZ, addDays, dayStart, mondayOf, ymd, zonedToUTC } from '@/lib/time'
 import { LANES, freeLane, laneIsFree } from '@/lib/lanes'
+import { sessionMin } from '@/lib/settings'
 
 export type ActionResult = { error?: string; ok?: string }
 
-const DURATIONS = [30, 45, 60]
 
 /** Winning Minds offers a time. The grid sends a date, a minute and a length. */
 export async function createSlot(_p: ActionResult, fd: FormData): Promise<ActionResult> {
@@ -17,18 +17,20 @@ export async function createSlot(_p: ActionResult, fd: FormData): Promise<Action
 
   const date = String(fd.get('date') ?? '')           // YYYY-MM-DD, Prague
   const minute = Number(fd.get('minute') ?? NaN)      // minutes since midnight
-  const duration = Number(fd.get('duration') ?? 45)
   const asked = Number(fd.get('lane') ?? NaN)         // which column was clicked
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(minute)) {
     return { error: 'That time could not be read.' }
   }
-  if (!DURATIONS.includes(duration)) return { error: 'Pick 30, 45 or 60 minutes.' }
 
   const [y, m, d] = date.split('-').map(Number)
   const startsAt = zonedToUTC(y, m, d, Math.floor(minute / 60), minute % 60, TZ_CZ)
 
   const supabase = await createClient()
+
+  // How long a call is is a setting, not something the page may decide,
+  // so it is read here and whatever arrived in the form is ignored.
+  const duration = await sessionMin(supabase)
 
   // Two of you, so a day is two columns. The column that was clicked is
   // the lane; which of you ends up taking it is your business, not the

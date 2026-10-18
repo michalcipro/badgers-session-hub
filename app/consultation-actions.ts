@@ -5,10 +5,10 @@ import { createClient } from '@/lib/supabase/server'
 import { requireActive } from '@/lib/auth'
 import { TZ_US, zonedToUTC } from '@/lib/time'
 import { freeLane } from '@/lib/lanes'
+import { sessionMin } from '@/lib/settings'
 
 export type ConsultationResult = { error?: string; ok?: string }
 
-const DURATIONS = [30, 45, 60]
 
 /**
  * A coach asks for a time. She types it in her own Madison time, which is
@@ -23,13 +23,11 @@ export async function requestConsultation(
 
   const date = String(fd.get('date') ?? '')
   const time = String(fd.get('time') ?? '')
-  const duration = Number(fd.get('duration') ?? 45)
   const topic = String(fd.get('topic') ?? '').trim()
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) {
     return { error: 'Pick a date and a time.' }
   }
-  if (!DURATIONS.includes(duration)) return { error: 'Pick 30, 45 or 60 minutes.' }
   if (topic.length > 500) return { error: 'Keep the note shorter.' }
 
   const [y, m, d] = date.split('-').map(Number)
@@ -41,10 +39,13 @@ export async function requestConsultation(
   }
 
   const supabase = await createClient()
+
+  // The same length as everything else, so a coach's hour cannot quietly
+  // become a different shape from a player's.
   const { error } = await supabase.from('consultations').insert({
     coach_id: me.id,
     requested_at: requestedAt,
-    duration_min: duration,
+    duration_min: await sessionMin(supabase),
     topic: topic || null,
   })
 

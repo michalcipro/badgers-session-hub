@@ -208,6 +208,35 @@ async function main() {
     return null
   })
 
+  await check('the session length is one setting everybody reads', async () => {
+    const { data, error } = await P.client.from('settings').select('session_min').maybeSingle()
+    if (error) {
+      return /settings/.test(error.message)
+        ? 'no settings row — run supabase/migrations/0009_settings.sql'
+        : error.message
+    }
+    if (!data) return 'the settings row is missing'
+    return [30, 45, 60].includes(data.session_min) ? null : `session_min is ${data.session_min}`
+  })
+
+  await check('a player cannot change the session length', async () => {
+    const { data } = await P.client.from('settings').update({ session_min: 60 }).eq('id', true).select('id')
+    return (data ?? []).length === 0 ? null : 'a player changed the session length'
+  })
+
+  await check('Winning Minds can change it, and only to a real length', async () => {
+    const { data: before } = await A.client.from('settings').select('session_min').maybeSingle()
+    const was = before?.session_min ?? 30
+    const other = was === 30 ? 45 : 30
+
+    const { error } = await A.client.from('settings').update({ session_min: other }).eq('id', true)
+    if (error) return error.message
+
+    const { error: bad } = await A.client.from('settings').update({ session_min: 37 }).eq('id', true)
+    await A.client.from('settings').update({ session_min: was }).eq('id', true)
+    return bad ? null : '37 minutes was accepted'
+  })
+
   await check('a repeating schedule can be recorded', async () => {
     const { data, error } = await A.client
       .from('slot_series')

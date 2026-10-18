@@ -2,6 +2,7 @@ import { Shell } from '@/app/_components/Shell'
 import { WeekCalendar } from '@/app/_components/WeekCalendar'
 import { createClient } from '@/lib/supabase/server'
 import { requireActive } from '@/lib/auth'
+import { sessionMin } from '@/lib/settings'
 import { loadWeekSlots } from '@/lib/slots'
 import { hourRange, weekRange, weekStartFor } from '@/lib/week'
 import { TZ_US, czTime, usDay, usTime } from '@/lib/time'
@@ -111,6 +112,7 @@ export default async function PlayerPage({
         hours={hourRange(slots, TZ_US, [8, 16])}
         meId={me.id}
         nowISO={new Date().toISOString()}
+        lengthMin={await sessionMin(supabase)}
       />
     </Shell>
   )

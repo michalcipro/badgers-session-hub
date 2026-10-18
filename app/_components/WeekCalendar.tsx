@@ -26,6 +26,8 @@ type Props = {
   hours: [number, number]
   meId: string
   nowISO: string
+  /** How long a call is. One setting, not a choice at every click. */
+  lengthMin: number
 }
 
 /** Anything the grid has to find room for: a single time, or a group of them. */
@@ -68,12 +70,11 @@ function Pips({ total, taken }: { total: number; taken: number }) {
 type Pick = { slot: SlotRow; places: number; otherName: string | null }
 
 export function WeekCalendar(props: Props) {
-  const { mode, tz, weekStart, basePath, slots, hours, meId, nowISO } = props
+  const { mode, tz, weekStart, basePath, slots, hours, meId, nowISO, lengthMin } = props
   const [startH, endH] = hours
   const rows = endH - startH
   const now = new Date(nowISO).getTime()
 
-  const [duration, setDuration] = useState(45)
   const [confirm, setConfirm] = useState<Pick | null>(null)
 
   const [addState, addAction] = useActionState<ActionResult, FormData>(createSlot, {})
@@ -343,18 +344,9 @@ export function WeekCalendar(props: Props) {
               : `${freeCount} open place${freeCount === 1 ? '' : 's'} this week`}
           </span>
           {mode === 'admin' && (
-            <label className="fld" style={{ marginLeft: 'auto', flex: '0 0 108px' }}>
-              Length
-              <select
-                value={duration}
-                onChange={(e) => setDuration(Number(e.target.value))}
-                style={{ width: 'auto' }}
-              >
-                <option value={30}>30 min</option>
-                <option value={45}>45 min</option>
-                <option value={60}>60 min</option>
-              </select>
-            </label>
+            <span className="sub num" style={{ marginLeft: 'auto' }}>
+              {lengthMin} min each · <Link href="/account">change</Link>
+            </span>
           )}
         </div>
 
@@ -404,7 +396,6 @@ export function WeekCalendar(props: Props) {
                         <form action={addAction} key={`a${i}-${l}`}>
                           <input type="hidden" name="date" value={dk} />
                           <input type="hidden" name="minute" value={minute} />
-                          <input type="hidden" name="duration" value={duration} />
                           <input type="hidden" name="lane" value={l + 1} />
                           <button
                             type="submit"

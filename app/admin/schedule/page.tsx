@@ -4,6 +4,7 @@ import { MeetLinks } from '@/app/_components/MeetLinks'
 import { RepeatWeek } from '@/app/_components/RepeatWeek'
 import { createClient } from '@/lib/supabase/server'
 import { requireActive } from '@/lib/auth'
+import { sessionMin } from '@/lib/settings'
 import { loadWeekSlots } from '@/lib/slots'
 import { loadSeries } from '@/lib/series'
 import { hourRange, weekRange, weekStartFor } from '@/lib/week'
@@ -40,6 +41,7 @@ export default async function SchedulePage({
         hours={hourRange(slots, TZ_CZ, [12, 21])}
         meId={me.id}
         nowISO={new Date().toISOString()}
+        lengthMin={await sessionMin(supabase)}
       />
 
       <RepeatWeek

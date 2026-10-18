@@ -7,6 +7,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireActive, type Role } from '@/lib/auth'
+import { SESSION_LENGTHS } from '@/lib/settings'
 
 export type AccountResult = { error?: string; ok?: string }
 
@@ -87,6 +88,32 @@ export async function createPerson(_p: AccountResult, fd: FormData): Promise<Acc
   return {
     ok: `${first_name} can sign in with ${email} and the password ${password} — give it to her now, it is not shown again.`,
   }
+}
+
+/**
+ * How long every call is. It lives in the database rather than in the
+ * page, so the server can refuse anything else outright — the grid used
+ * to offer a length beside every click and nothing kept them in step.
+ */
+export async function setSessionLength(_p: AccountResult, fd: FormData): Promise<AccountResult> {
+  const me = await requireActive('admin')
+  const minutes = Number(fd.get('session_min') ?? NaN)
+  if (!SESSION_LENGTHS.includes(minutes as (typeof SESSION_LENGTHS)[number])) {
+    return { error: 'Pick 30, 45 or 60 minutes.' }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('settings')
+    .update({ session_min: minutes, updated_by: me.id, updated_at: new Date().toISOString() })
+    .eq('id', true)
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin/schedule')
+  revalidatePath('/player')
+  revalidatePath('/account')
+  return { ok: `Every call is now ${minutes} minutes.` }
 }
 
 /** Moves somebody between player, coach and Winning Minds. */

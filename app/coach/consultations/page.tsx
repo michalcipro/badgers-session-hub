@@ -2,6 +2,7 @@ import { Shell } from '@/app/_components/Shell'
 import { ConsultationRequest, type ConsultationRow } from '@/app/_components/ConsultationRequest'
 import { createClient } from '@/lib/supabase/server'
 import { requireActive } from '@/lib/auth'
+import { sessionMin } from '@/lib/settings'
 
 type Row = Omit<ConsultationRow, 'meet_url'> & {
   slots: { meet_url: string | null } | { meet_url: string | null }[] | null
@@ -27,7 +28,7 @@ export default async function CoachConsultations() {
         <h2>Consultations</h2>
         <p>Your own calls with Winning Minds, separate from the players&rsquo; times.</p>
       </div>
-      <ConsultationRequest rows={rows} />
+      <ConsultationRequest rows={rows} lengthMin={await sessionMin(supabase)} />
     </Shell>
   )
 }

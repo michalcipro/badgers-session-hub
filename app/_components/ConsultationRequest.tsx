@@ -21,7 +21,13 @@ const LABEL = {
   cancelled: { text: 'Withdrawn', cls: 'pill plain' },
 } as const
 
-export function ConsultationRequest({ rows }: { rows: ConsultationRow[] }) {
+export function ConsultationRequest({
+  rows,
+  lengthMin,
+}: {
+  rows: ConsultationRow[]
+  lengthMin: number
+}) {
   const [state, action, pending] = useActionState<ConsultationResult, FormData>(requestConsultation, {})
   const [cancelState, cancelAction] = useActionState<ConsultationResult, FormData>(cancelConsultation, {})
   const formRef = useRef<HTMLFormElement>(null)
@@ -49,14 +55,12 @@ export function ConsultationRequest({ rows }: { rows: ConsultationRow[] }) {
               Time (yours)
               <input type="time" name="time" step={900} required />
             </label>
-            <label className="fld" style={{ flex: '0 1 120px' }}>
+            <div className="fld" style={{ flex: '0 1 120px' }}>
               Length
-              <select name="duration" defaultValue="45">
-                <option value="30">30 min</option>
-                <option value="45">45 min</option>
-                <option value="60">60 min</option>
-              </select>
-            </label>
+              {/* Not a choice: every call is the same length, set by
+                  Winning Minds, so a consultation cannot drift from it. */}
+              <p className="sm num" style={{ paddingBlock: 10 }}>{lengthMin} minutes</p>
+            </div>
           </div>
           <label className="fld" style={{ marginTop: 12 }}>
             What it is about <span className="faint">(optional)</span>
