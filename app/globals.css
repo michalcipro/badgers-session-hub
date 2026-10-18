@@ -185,7 +185,7 @@ input[type=file] {
 .calwrap { overflow-x: auto; border-top: 1px solid var(--line) }
 .cal {
   display: grid; grid-template-columns: 62px repeat(7, minmax(0, 1fr));
-  min-width: 680px; --hh: 56px;
+  min-width: 680px; --hh: 64px; /* the component overrides this; keep them equal */
 }
 .cal-corner { border-bottom: 1px solid var(--line) }
 .cal-dh {
@@ -226,6 +226,22 @@ input[type=file] {
 .cal-ev.taken { background: var(--accent); color: #fff }
 .cal-ev.mine { background: var(--accent); color: #fff; box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); cursor: pointer }
 .cal-ev.past { background: var(--surface-2); color: var(--fg-faint); border-color: var(--line); border-style: solid }
+/* How many places a time holds, and how many are gone. The dots are the
+   quickest way to see that two calls run at once without reading a word. */
+.pips { display: inline-flex; gap: 2.5px; align-items: center; vertical-align: middle; flex: none }
+.pips i {
+  width: 5px; height: 5px; border-radius: 50%;
+  border: 1px solid currentColor; opacity: .8;
+}
+.pips i.on { background: currentColor }
+.note .pips i { width: 7px; height: 7px }
+
+/* Two places, both still open: the block is drawn as two stacked cards. */
+.cal-ev.pair { box-shadow: 3px -3px 0 -1px var(--surface), 3px -3px 0 0 currentColor }
+.cal-ev.free.pair { box-shadow: 3px -3px 0 -1px var(--surface), 3px -3px 0 0 var(--good) }
+.cal-ev.taken.pair { box-shadow: 3px -3px 0 -1px var(--surface), 3px -3px 0 0 var(--accent) }
+.cal-ev.free.can:hover { box-shadow: none }
+
 /* A confirmed coach consultation: occupies the calendar, but is not a player's call. */
 .cal-ev.consult { background: var(--info-soft); color: var(--info); border: 1px solid currentColor }
 
