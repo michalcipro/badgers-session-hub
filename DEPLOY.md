@@ -19,9 +19,9 @@ Nothing else uses it yet, so nothing breaks.
 
 ## Where it stands
 
-Deployed and running at **https://badgers-session-hub.vercel.app** against
-the live Frankfurt database. The domain does not point there yet, so only
-someone who knows this address can reach it.
+Deployed and running at **https://winningmindsperformance.com** against
+the live Frankfurt database. `www` and the original
+`badgers-session-hub.vercel.app` both serve the same app.
 
 The account is on Vercel's **Hobby** plan. Two consequences:
 
@@ -59,30 +59,34 @@ vercel deploy --prod
 
 Done once already; pushing to `main` does it automatically from now on.
 
-## 4. Point the domain — **you**
+## 4. Point the domain — done
 
-Both names are already added to the Vercel project and ownership is
-verified. All that is left is the DNS, in the Webglobe editor:
+Live at **https://winningmindsperformance.com** and on `www`, both with
+their own certificate. For the record, this is what was set in the
+Webglobe DNS editor:
 
 | Host | Type | Value |
 | --- | --- | --- |
 | `@` | **A** | `216.198.79.1` |
 | `www` | **CNAME** | `9514fde62d631713.vercel-dns-017.com.` |
 
-`@` currently points at `195.181.249.108`, the Webglobe webhosting —
-replace that value. `www` is an A record today; delete it and add the
-CNAME in its place, as a host cannot have both.
+The apex row is the one with an **empty** name, directly above the
+wildcard `*` — they are easy to mix up, and the wildcard must keep
+pointing at Webglobe (`195.181.249.108`). There was never a `www` A
+record; the wildcard answered for it, and the new CNAME takes precedence
+over the wildcard on its own.
 
 **Leave the MX records and the two SPF `TXT` records exactly as they are.**
 Mail for the domain runs on Webglobe and nothing here touches it. For the
 same reason do not switch the nameservers to Vercel, even though Vercel
 suggests it — that would move the mail records too.
 
-DNS can take a few hours. Vercel issues the certificate on its own once
-the records resolve. To watch it:
+Webglobe published the change to its nameservers about ten minutes
+after saving. Vercel issued the `www` certificate by itself; the apex one
+needed a nudge:
 
 ```bash
-vercel domains verify winningmindsperformance.com
+vercel certs issue winningmindsperformance.com
 ```
 
 ## 5. Tell Supabase the new address — **you**
