@@ -67,7 +67,7 @@ async function check(name, fn) {
 }
 
 const stamp = Date.now()
-const made = { users: [], slots: [] }
+const made = { users: [], slots: [], series: [] }
 
 const PEOPLE = {
   admin: { email: `verify-admin-${stamp}@example.com`, password: `Vf!${stamp}aA`, role: 'admin' },
@@ -104,6 +104,7 @@ async function cleanup() {
   // Rows tied to a test account go with it; these are not.
   await admin.from('files').delete().like('storage_path', `verify-%-${stamp}`)
   for (const id of made.slots) await admin.from('slots').delete().eq('id', id)
+  for (const id of made.series) await admin.from('slot_series').delete().eq('id', id)
   for (const id of made.users) await admin.auth.admin.deleteUser(id).catch(() => {})
 }
 
@@ -205,6 +206,33 @@ async function main() {
     }
     made.slots.push(data.id)
     return null
+  })
+
+  await check('a repeating schedule can be recorded', async () => {
+    const { data, error } = await A.client
+      .from('slot_series')
+      .insert({ created_by: A.id, source_week: '2026-10-19', ends_on: '2026-12-19' })
+      .select('id')
+      .single()
+    if (error) {
+      return /slot_series/.test(error.message)
+        ? 'no repeating schedules — run supabase/migrations/0008_repeat.sql'
+        : error.message
+    }
+    made.series.push(data.id)
+
+    const { error: linkError } = await A.client
+      .from('slots')
+      .update({ series_id: data.id })
+      .eq('id', made.slots[0])
+    return linkError ? linkError.message : null
+  })
+
+  await check('a schedule may not end before it starts', async () => {
+    const { error } = await A.client
+      .from('slot_series')
+      .insert({ created_by: A.id, source_week: '2026-12-19', ends_on: '2026-10-19' })
+    return error ? null : 'a schedule ending before it began was accepted'
   })
 
   await check('a third call at the same time is refused', async () => {
@@ -520,6 +548,18 @@ async function main() {
     return (data ?? []).length === 0
       ? null
       : 'a player could read a consultation slot — run supabase/migrations/0006_slot_visibility.sql'
+  })
+
+  await check('a player cannot read the repeating schedules', async () => {
+    const { data } = await P.client.from('slot_series').select('id')
+    return (data ?? []).length === 0 ? null : 'a player could read the schedule table'
+  })
+
+  await check('a player cannot set a schedule up', async () => {
+    const { error } = await P.client
+      .from('slot_series')
+      .insert({ created_by: P.id, source_week: '2026-10-19', ends_on: '2026-12-19' })
+    return error ? null : 'a player created a repeating schedule'
   })
 
   await check('Winning Minds still sees every kind of slot', async () => {

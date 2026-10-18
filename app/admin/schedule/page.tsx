@@ -1,11 +1,13 @@
 import { Shell } from '@/app/_components/Shell'
 import { WeekCalendar } from '@/app/_components/WeekCalendar'
 import { MeetLinks } from '@/app/_components/MeetLinks'
+import { RepeatWeek } from '@/app/_components/RepeatWeek'
 import { createClient } from '@/lib/supabase/server'
 import { requireActive } from '@/lib/auth'
 import { loadWeekSlots } from '@/lib/slots'
+import { loadSeries } from '@/lib/series'
 import { hourRange, weekRange, weekStartFor } from '@/lib/week'
-import { TZ_CZ } from '@/lib/time'
+import { TZ_CZ, calFmt, dayKey } from '@/lib/time'
 
 export default async function SchedulePage({
   searchParams,
@@ -20,6 +22,7 @@ export default async function SchedulePage({
 
   const supabase = await createClient()
   const slots = await loadWeekSlots(supabase, fromISO, toISO, 'staff', me.id)
+  const series = await loadSeries(supabase)
 
   return (
     <Shell profile={me} current="/admin/schedule">
@@ -37,6 +40,13 @@ export default async function SchedulePage({
         hours={hourRange(slots, TZ_CZ, [12, 21])}
         meId={me.id}
         nowISO={new Date().toISOString()}
+      />
+
+      <RepeatWeek
+        weekKey={dayKey(weekStart)}
+        weekLabel={calFmt(weekStart, { day: 'numeric', month: 'long' })}
+        slotCount={slots.filter((s) => s.kind === 'player').length}
+        series={series}
       />
 
       <MeetLinks slots={slots} nowISO={new Date().toISOString()} />
