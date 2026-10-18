@@ -8,7 +8,8 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "prototype": "node docs/build.mjs",
-    "verify": "node scripts/verify-setup.mjs"
+    "verify": "node scripts/verify-setup.mjs",
+    "setup:storage": "node scripts/create-bucket.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

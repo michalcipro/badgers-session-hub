@@ -71,7 +71,7 @@ export default async function AdminPage() {
         <div className="hd">
           <h3>Roster</h3>
           <span className="sub">
-            {players.length} player{players.length === 1 ? '' : 's'} · {active.length} accounts in total
+            {players.length} player{players.length === 1 ? '' : 's'} · {active.length} account{active.length === 1 ? '' : 's'} in total
           </span>
         </div>
         {active.length === 0 ? (
@@ -95,13 +95,6 @@ export default async function AdminPage() {
         )}
       </div>
 
-      <div className="note warn">
-        <span>→</span>
-        <div>
-          <b>Next step:</b> the availability calendar and booking, then the confirmation
-          and 24-hour reminder emails.
-        </div>
-      </div>
     </Shell>
   )
 }

@@ -105,3 +105,12 @@ export function hourLabel(hour: number, tz: string): string {
   const h = hour % 12 === 0 ? 12 : hour % 12
   return `${h} ${hour < 12 ? 'am' : 'pm'}`
 }
+
+/** Minutes since midnight as a clock time, for labels on quarter-hour cells. */
+export function minuteLabel(minute: number, tz: string): string {
+  const h = Math.floor(minute / 60)
+  const m = String(minute % 60).padStart(2, '0')
+  if (tz === TZ_CZ) return `${String(h).padStart(2, '0')}:${m}`
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return `${h12}:${m} ${h < 12 ? 'am' : 'pm'}`
+}

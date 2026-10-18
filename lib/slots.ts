@@ -2,13 +2,23 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { fullName, shortName } from './auth'
 import type { SlotRow } from './week'
 
+type Booking = { id: string; player_id: string }
+
 type RawSlot = {
   id: string
   starts_at: string
   duration_min: number
   meet_url: string | null
-  bookings: { id: string; player_id: string }[] | null
+  /**
+   * bookings.slot_id is unique, so PostgREST treats this as a to-one
+   * relationship and sends an object rather than an array. Older versions
+   * send an array, so accept both.
+   */
+  bookings: Booking | Booking[] | null
 }
+
+const one = (b: Booking | Booking[] | null | undefined): Booking | null =>
+  Array.isArray(b) ? (b[0] ?? null) : (b ?? null)
 
 type RosterRow = { id: string; first_name: string; last_name: string }
 
@@ -38,7 +48,7 @@ export async function loadWeekSlots(
   for (const p of (roster ?? []) as RosterRow[]) names.set(p.id, p)
 
   return ((slots ?? []) as RawSlot[]).map((s) => {
-    const booking = s.bookings?.[0] ?? null
+    const booking = one(s.bookings)
     const person = booking ? names.get(booking.player_id) : undefined
 
     let booked_name: string | null = null

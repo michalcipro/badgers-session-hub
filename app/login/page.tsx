@@ -24,7 +24,7 @@ export default function LoginPage() {
             <form action={action}>
               <label className="fld">
                 Email
-                <input type="email" name="email" autoComplete="email" required />
+                <input type="email" name="email" autoComplete="email" defaultValue={state.values?.email ?? ''} required />
               </label>
               <label className="fld">
                 Password

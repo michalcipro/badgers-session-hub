@@ -22,9 +22,11 @@ export default async function PlayersPage() {
   const players = people.filter((p) => p.role === 'player')
   const staff = people.filter((p) => p.role !== 'player')
 
+  // bookings.slot_id is unique, so this arrives as an object, not an array.
+  type B = { player_id: string }
   const nextCall = new Map<string, string>()
-  for (const s of (slots ?? []) as { starts_at: string; bookings: { player_id: string }[] }[]) {
-    const b = s.bookings?.[0]
+  for (const s of (slots ?? []) as { starts_at: string; bookings: B | B[] | null }[]) {
+    const b = Array.isArray(s.bookings) ? s.bookings[0] : s.bookings
     if (b && !nextCall.has(b.player_id)) nextCall.set(b.player_id, s.starts_at)
   }
 

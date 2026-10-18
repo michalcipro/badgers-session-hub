@@ -28,16 +28,16 @@ export default function SignUpPage() {
               <div className="row" style={{ gap: 12, flexWrap: 'nowrap' }}>
                 <label className="fld" style={{ flex: 1, minWidth: 0 }}>
                   First name
-                  <input type="text" name="first_name" autoComplete="given-name" required />
+                  <input type="text" name="first_name" autoComplete="given-name" defaultValue={state.values?.first_name ?? ''} required />
                 </label>
                 <label className="fld" style={{ flex: 1, minWidth: 0 }}>
                   Last name
-                  <input type="text" name="last_name" autoComplete="family-name" required />
+                  <input type="text" name="last_name" autoComplete="family-name" defaultValue={state.values?.last_name ?? ''} required />
                 </label>
               </div>
               <label className="fld">
                 Email
-                <input type="email" name="email" autoComplete="email" required />
+                <input type="email" name="email" autoComplete="email" defaultValue={state.values?.email ?? ''} required />
               </label>
               <label className="fld">
                 Password

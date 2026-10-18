@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useActionState, useEffect, useState } from 'react'
 import {
   addDays, calFmt, czTime, dayKey, gapHours, hourLabel,
-  minutesInDay, timeIn, usDay, usTime, type CalDate,
+  minuteLabel, minutesInDay, timeIn, usDay, usTime, type CalDate,
 } from '@/lib/time'
 import type { SlotRow } from '@/lib/week'
 import {
@@ -172,7 +172,7 @@ export function WeekCalendar(props: Props) {
                             type="submit"
                             className="cal-add"
                             style={{ top: (i * STEP * HOUR_H) / 60, height: (STEP * HOUR_H) / 60 }}
-                            aria-label={`Offer ${calFmt(d, { weekday: 'long' })} ${hourLabel(Math.floor(minute / 60), tz)}`}
+                            aria-label={`Offer ${calFmt(d, { weekday: 'long', month: 'long', day: 'numeric' })} at ${minuteLabel(minute, tz)}`}
                           />
                         </form>
                       )

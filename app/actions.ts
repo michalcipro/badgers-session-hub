@@ -3,7 +3,16 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
-export type FormState = { error?: string; ok?: string }
+/**
+ * `values` carries what was typed back to the form. React resets an
+ * uncontrolled form once its action finishes, so without this a failed
+ * sign-up would wipe all four fields and make people start again.
+ */
+export type FormState = {
+  error?: string
+  ok?: string
+  values?: Record<string, string>
+}
 
 export async function signUp(_prev: FormState, fd: FormData): Promise<FormState> {
   const email = String(fd.get('email') ?? '').trim()
@@ -11,9 +20,10 @@ export async function signUp(_prev: FormState, fd: FormData): Promise<FormState>
   const first_name = String(fd.get('first_name') ?? '').trim()
   const last_name = String(fd.get('last_name') ?? '').trim()
 
-  if (!email || !password) return { error: 'Enter your email and a password.' }
-  if (password.length < 8) return { error: 'Use at least 8 characters for your password.' }
-  if (!first_name || !last_name) return { error: 'Enter your first and last name.' }
+  const values = { first_name, last_name, email }
+  if (!email || !password) return { error: 'Enter your email and a password.', values }
+  if (password.length < 8) return { error: 'Use at least 8 characters for your password.', values }
+  if (!first_name || !last_name) return { error: 'Enter your first and last name.', values }
 
   const supabase = await createClient()
   const { error } = await supabase.auth.signUp({
@@ -21,7 +31,14 @@ export async function signUp(_prev: FormState, fd: FormData): Promise<FormState>
     password,
     options: { data: { first_name, last_name } },
   })
-  if (error) return { error: error.message }
+  if (error) {
+    // Supabase's built-in mailer is heavily rate limited, and that message
+    // means nothing to the person signing up.
+    const message = /rate limit/i.test(error.message)
+      ? 'Too many sign-ups at once. Wait a few minutes and try again, or ask Winning Minds to add you.'
+      : error.message
+    return { error: message, values }
+  }
 
   redirect('/pending')
 }
@@ -29,11 +46,13 @@ export async function signUp(_prev: FormState, fd: FormData): Promise<FormState>
 export async function signIn(_prev: FormState, fd: FormData): Promise<FormState> {
   const email = String(fd.get('email') ?? '').trim()
   const password = String(fd.get('password') ?? '')
-  if (!email || !password) return { error: 'Enter your email and password.' }
+  if (!email || !password) return { error: 'Enter your email and password.', values: { email } }
 
   const supabase = await createClient()
   const { error } = await supabase.auth.signInWithPassword({ email, password })
-  if (error) return { error: 'That email and password do not match an account.' }
+  if (error) {
+    return { error: 'That email and password do not match an account.', values: { email } }
+  }
 
   redirect('/')
 }
