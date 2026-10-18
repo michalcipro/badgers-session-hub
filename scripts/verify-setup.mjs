@@ -490,6 +490,26 @@ async function main() {
     return error ? null : 'a player booked a time reserved for a coach'
   })
 
+  await check('a player cannot even see that a consultation exists', async () => {
+    const slotId2 = made.slots[made.slots.length - 1]
+    const { data } = await P.client.from('slots').select('id').eq('id', slotId2)
+    return (data ?? []).length === 0
+      ? null
+      : 'a player could read a consultation slot — run supabase/migrations/0006_slot_visibility.sql'
+  })
+
+  await check('Winning Minds still sees every kind of slot', async () => {
+    const slotId2 = made.slots[made.slots.length - 1]
+    const { data } = await A.client.from('slots').select('id').eq('id', slotId2)
+    return (data ?? []).length === 1 ? null : 'a consultation slot vanished for Winning Minds'
+  })
+
+  await check('a coach sees her own consultation in the calendar', async () => {
+    const slotId2 = made.slots[made.slots.length - 1]
+    const { data } = await coach.client.from('slots').select('id').eq('id', slotId2)
+    return (data ?? []).length === 1 ? null : 'the coach could not see her own consultation slot'
+  })
+
   // --- leaving the squad
   console.log('\nLeaving the squad')
 
