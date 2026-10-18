@@ -290,6 +290,45 @@ async function main() {
     return data.length >= 3 ? null : `only ${data.length} profiles were visible`
   })
 
+  // --- the owner account
+  console.log('\nThe owner account')
+  const { data: owner } = await admin
+    .from('profiles')
+    .select('id, email')
+    .eq('is_owner', true)
+    .maybeSingle()
+
+  await check('exactly one account is marked as the owner', async () =>
+    owner ? null : 'no account has is_owner set'
+  )
+
+  await check('another admin cannot demote the owner', async () => {
+    if (!owner) return 'no owner to test against'
+    await A.client.from('profiles').update({ role: 'player' }).eq('id', owner.id)
+    const { data } = await admin.from('profiles').select('role').eq('id', owner.id).single()
+    return data?.role === 'admin' ? null : `the owner was demoted to "${data?.role}"`
+  })
+
+  await check('another admin cannot decline the owner', async () => {
+    if (!owner) return 'no owner to test against'
+    await A.client.from('profiles').update({ status: 'declined' }).eq('id', owner.id)
+    const { data } = await admin.from('profiles').select('status').eq('id', owner.id).single()
+    return data?.status === 'active' ? null : `the owner was set to "${data?.status}"`
+  })
+
+  await check('an admin cannot make itself the owner', async () => {
+    await A.client.from('profiles').update({ is_owner: true }).eq('id', A.id)
+    const { data } = await admin.from('profiles').select('is_owner').eq('id', A.id).single()
+    return data?.is_owner === false ? null : 'an admin claimed the owner flag'
+  })
+
+  await check('only the owner can hand out the Winning Minds role', async () => {
+    await A.client.from('profiles').update({ role: 'admin' }).eq('id', P.id)
+    const { data } = await admin.from('profiles').select('role').eq('id', P.id).single()
+    return data?.role === 'player' ? null : 'a non-owner admin promoted somebody to admin'
+  })
+
+  console.log('\nEverybody else')
   await check('a signed-out visitor can read nothing', async () => {
     const { data, error } = await anonClient().from('slots').select('*')
     if (error) return null

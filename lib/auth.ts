@@ -13,6 +13,8 @@ export type Profile = {
   status: Status
   class_year: string | null
   title: string | null
+  /** The one account that cannot be demoted or edited by another admin. */
+  is_owner: boolean
   created_at: string
 }
 

@@ -85,6 +85,7 @@ export default async function AdminPage() {
                   <div className="nm">{fullName(p)}</div>
                   <div className="xs muted trunc">{p.email}</div>
                 </div>
+                {p.is_owner && <span className="pill ok">Owner</span>}
                 <span className={p.role === 'player' ? 'pill plain' : 'pill accent'}>
                   {ROLE_LABEL[p.role]}
                 </span>
