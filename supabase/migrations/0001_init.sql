@@ -8,8 +8,6 @@
 -- content of a session. A bug in the app cannot leak what the database
 -- refuses to return.
 
-create extension if not exists btree_gist;
-
 -- ---------------------------------------------------------------- types
 
 create type user_role   as enum ('admin', 'coach', 'player');
@@ -62,6 +60,11 @@ language sql stable security definer set search_path = '' as $$
   select role from public.profiles where id = auth.uid()
 $$;
 
+create function public.my_status() returns user_status
+language sql stable security definer set search_path = '' as $$
+  select status from public.profiles where id = auth.uid()
+$$;
+
 create function public.is_active() returns boolean
 language sql stable security definer set search_path = '' as $$
   select exists (
@@ -103,10 +106,31 @@ create table slots (
   created_by   uuid        references profiles(id) on delete set null,
   created_at   timestamptz not null default now(),
 
-  constraint slots_no_overlap exclude using gist (
-    tstzrange(starts_at, starts_at + make_interval(mins => duration_min)) with &&
-  )
+  -- The time the call occupies. Filled in by the trigger below, never by
+  -- the app. It exists as a stored column because `timestamptz + interval`
+  -- is only STABLE, not IMMUTABLE, so it cannot go in an index expression.
+  span         tstzrange   not null,
+
+  constraint slots_no_overlap exclude using gist (span with &&)
 );
+
+create function public.slots_set_span()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.span := tstzrange(
+    new.starts_at,
+    new.starts_at + make_interval(mins => new.duration_min)
+  );
+  return new;
+end;
+$$;
+
+create trigger slots_span
+  before insert or update of starts_at, duration_min on slots
+  for each row execute function public.slots_set_span();
 
 create index slots_starts_at_idx on slots (starts_at);
 
@@ -186,8 +210,15 @@ alter table files    enable row level security;
 create policy profiles_select_own on profiles for select
   using (id = auth.uid() or public.is_admin());
 
+-- You may edit your own row, but neither your role nor your status: without
+-- the status check a pending account could approve itself.
 create policy profiles_update_own on profiles for update
-  using (id = auth.uid()) with check (id = auth.uid() and role = public.my_role());
+  using (id = auth.uid())
+  with check (
+    id = auth.uid()
+    and role = public.my_role()
+    and status = public.my_status()
+  );
 
 create policy profiles_admin_write on profiles for update
   using (public.is_admin()) with check (public.is_admin());
@@ -232,6 +263,9 @@ create policy notes_admin on notes for all
 create policy tasks_select on tasks for select
   using (player_id = auth.uid() or public.is_admin());
 
+-- Row-level security cannot limit this to the done_at column, so a player
+-- can also edit the wording of her own task. Harmless today; when tasks get
+-- a UI, replace this with a security-definer function that only ticks.
 create policy tasks_tick_own on tasks for update
   using (player_id = auth.uid() and public.is_active())
   with check (player_id = auth.uid());

@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "prototype": "node docs/build.mjs"
+    "prototype": "node docs/build.mjs",
+    "verify": "node scripts/verify-setup.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
