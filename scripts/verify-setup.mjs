@@ -427,6 +427,47 @@ async function main() {
     return error ? null : 'a player created a file row'
   })
 
+  // --- leaving the squad
+  console.log('\nLeaving the squad')
+
+  await check('a profile can be archived', async () => {
+    const { error } = await admin.from('profiles').update({ status: 'archived' }).eq('id', O.id)
+    return error
+      ? `${error.message} — run supabase/migrations/0004_archive.sql`
+      : null
+  })
+
+  await check('an archived player loses every permission', async () => {
+    const { data: slots } = await O.client.from('slots').select('*')
+    if ((slots ?? []).length > 0) return 'an archived player could still read the schedule'
+    const { data: roster } = await O.client.from('roster').select('*')
+    if ((roster ?? []).length > 0) return 'an archived player could still read the roster'
+    const { error } = await O.client.from('bookings').insert({ slot_id: slotId, player_id: O.id })
+    return error ? null : 'an archived player could still book'
+  })
+
+  await check('her record survives being archived', async () => {
+    const { data } = await admin.from('tasks').select('id').eq('player_id', O.id)
+    return (data ?? []).length > 0 ? null : 'her tasks disappeared when she was archived'
+  })
+
+  await check('bringing her back restores access', async () => {
+    await admin.from('profiles').update({ status: 'active' }).eq('id', O.id)
+    const { data } = await O.client.from('roster').select('id')
+    return (data ?? []).length > 0 ? null : 'she could not read the roster again'
+  })
+
+  await check('deleting an account takes her rows with it', async () => {
+    const { data: before } = await admin.from('tasks').select('id').eq('player_id', O.id)
+    if ((before ?? []).length === 0) return 'no rows to check against'
+    await admin.auth.admin.deleteUser(O.id)
+    made.users = made.users.filter((id) => id !== O.id)
+    const { data: after } = await admin.from('tasks').select('id').eq('player_id', O.id)
+    const { data: profile } = await admin.from('profiles').select('id').eq('id', O.id)
+    if ((after ?? []).length > 0) return 'her tasks outlived the account'
+    return (profile ?? []).length === 0 ? null : 'her profile outlived the account'
+  })
+
   console.log('\nEverybody else')
   await check('a signed-out visitor can read nothing', async () => {
     const { data, error } = await anonClient().from('slots').select('*')

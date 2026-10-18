@@ -94,6 +94,29 @@ export async function releaseBooking(_p: ActionResult, fd: FormData): Promise<Ac
   return {}
 }
 
+/**
+ * After a call, Winning Minds records whether she turned up. Everything
+ * the statistics say rests on this, so it stays deliberately simple:
+ * came, did not come, or not marked yet.
+ */
+export async function setAttendance(_p: ActionResult, fd: FormData): Promise<ActionResult> {
+  await requireActive('admin')
+  const id = String(fd.get('booking_id') ?? '')
+  const value = String(fd.get('attended') ?? '')
+  if (!id) return { error: 'Missing booking.' }
+
+  const attended = value === 'clear' ? null : value === 'true'
+
+  const supabase = await createClient()
+  const { error } = await supabase.from('bookings').update({ attended }).eq('id', id)
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin/schedule')
+  revalidatePath('/admin/stats')
+  revalidatePath('/coach')
+  return {}
+}
+
 // ------------------------------------------------------------- the player
 
 /** One call per player per week: taking a new time gives up the old one. */

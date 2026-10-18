@@ -8,6 +8,7 @@ export default async function PendingPage() {
   if (profile.status === 'active') redirect('/')
 
   const declined = profile.status === 'declined'
+  const archived = profile.status === 'archived'
 
   return (
     <div className="auth wrap">
@@ -23,15 +24,21 @@ export default async function PendingPage() {
         <div className="card">
           <div className="bd" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <span className={declined ? 'pill accent' : 'pill warn'} style={{ alignSelf: 'flex-start' }}>
-              {declined ? 'Not approved' : 'Waiting for approval'}
+              {declined ? 'Not approved' : archived ? 'No longer active' : 'Waiting for approval'}
             </span>
             <h2 style={{ fontSize: 18, fontWeight: 700 }}>
-              {declined ? 'This account was not approved' : `Thanks, ${profile.first_name}.`}
+              {declined
+                ? 'This account was not approved'
+                : archived
+                  ? `Your access has ended, ${profile.first_name}.`
+                  : `Thanks, ${profile.first_name}.`}
             </h2>
             <p className="sm muted">
               {declined
                 ? 'If you think that is a mistake, talk to your coach or to Winning Minds.'
-                : 'Your account is with Winning Minds. Once they approve it you can book your calls and message them here. You will get an email when that happens.'}
+                : archived
+                  ? 'Your time with the programme has finished, so you can no longer book calls here. Talk to Winning Minds if that is not right.'
+                  : 'Your account is with Winning Minds. Once they approve it you can book your calls and message them here. You will get an email when that happens.'}
             </p>
             <p className="xs faint">Signed in as {profile.email}</p>
             <form action={signOut}>

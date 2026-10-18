@@ -15,6 +15,7 @@ const LINKS: Record<Profile['role'], { href: string; label: string }[]> = {
     { href: '/admin/players', label: 'Players' },
     { href: '/admin/messages', label: 'Messages' },
     { href: '/admin/files', label: 'Library' },
+    { href: '/admin/stats', label: 'Stats' },
     { href: '/account', label: 'Account' },
   ],
   coach: [

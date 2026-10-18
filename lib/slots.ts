@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { fullName, shortName } from './auth'
 import type { SlotRow } from './week'
 
-type Booking = { id: string; player_id: string }
+type Booking = { id: string; player_id: string; attended: boolean | null }
 
 type RawSlot = {
   id: string
@@ -37,7 +37,7 @@ export async function loadWeekSlots(
   const [{ data: slots }, { data: roster }] = await Promise.all([
     supabase
       .from('slots')
-      .select('id, starts_at, duration_min, meet_url, bookings(id, player_id)')
+      .select('id, starts_at, duration_min, meet_url, bookings(id, player_id, attended)')
       .gte('starts_at', fromISO)
       .lt('starts_at', toISO)
       .order('starts_at'),
@@ -65,6 +65,7 @@ export async function loadWeekSlots(
       meet_url: s.meet_url,
       booking_id: booking?.id ?? null,
       booked_by: booking?.player_id ?? null,
+      attended: booking?.attended ?? null,
       booked_name,
     }
   })

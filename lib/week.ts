@@ -10,6 +10,7 @@ export type SlotRow = {
   meet_url: string | null
   booking_id: string | null
   booked_by: string | null
+  attended: boolean | null
   /** How this viewer is allowed to see the name: full, or first name + initial. */
   booked_name: string | null
 }

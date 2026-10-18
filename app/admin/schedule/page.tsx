@@ -39,7 +39,7 @@ export default async function SchedulePage({
         nowISO={new Date().toISOString()}
       />
 
-      <MeetLinks slots={slots} />
+      <MeetLinks slots={slots} nowISO={new Date().toISOString()} />
     </Shell>
   )
 }

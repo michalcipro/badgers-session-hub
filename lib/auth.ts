@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 
 export type Role = 'admin' | 'coach' | 'player'
-export type Status = 'pending' | 'active' | 'declined'
+export type Status = 'pending' | 'active' | 'declined' | 'archived'
 
 export type Profile = {
   id: string

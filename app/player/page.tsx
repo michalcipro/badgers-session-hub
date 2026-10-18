@@ -37,6 +37,17 @@ export default async function PlayerPage({
     ? Date.now() >= new Date(next.starts_at).getTime() - 10 * 60_000
     : false
 
+  // Her own record. Only ever her own rows — row-level security sees to that.
+  const { data: mine } = await supabase
+    .from('bookings')
+    .select('attended, slots!inner(starts_at)')
+    .eq('player_id', me.id)
+    .lt('slots.starts_at', new Date().toISOString())
+
+  const pastCalls = (mine ?? []) as unknown as { attended: boolean | null }[]
+  const came = pastCalls.filter((b) => b.attended === true).length
+  const missed = pastCalls.filter((b) => b.attended === false).length
+
   return (
     <Shell profile={me} current="/player">
       <div className="page-h">
@@ -73,6 +84,21 @@ export default async function PlayerPage({
         <div className="note bad">
           <span>◎</span>
           <div><b>You have no call booked.</b> Pick a green time below — first come, first served.</div>
+        </div>
+      )}
+
+      {pastCalls.length > 0 && (
+        <div className="grid3">
+          <div className="stat">
+            <div className="v num">{came}</div>
+            <div className="k">Calls you have had</div>
+          </div>
+          {missed > 0 && (
+            <div className="stat">
+              <div className="v num">{missed}</div>
+              <div className="k">Missed</div>
+            </div>
+          )}
         </div>
       )}
 

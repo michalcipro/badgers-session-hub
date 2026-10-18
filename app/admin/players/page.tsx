@@ -19,8 +19,9 @@ export default async function PlayersPage() {
   ])
 
   const people = (profiles ?? []) as Profile[]
-  const players = people.filter((p) => p.role === 'player')
-  const staff = people.filter((p) => p.role !== 'player')
+  const players = people.filter((p) => p.role === 'player' && p.status === 'active')
+  const former = people.filter((p) => p.role === 'player' && p.status === 'archived')
+  const staff = people.filter((p) => p.role !== 'player' && p.status === 'active')
 
   // bookings.slot_id is unique, so this arrives as an object, not an array.
   type B = { player_id: string }
@@ -71,6 +72,27 @@ export default async function PlayersPage() {
           </div>
         )}
       </div>
+
+      {former.length > 0 && (
+        <div className="card">
+          <div className="hd">
+            <h3>Former players</h3>
+            <span className="sub">No access, records kept</span>
+          </div>
+          <div className="list">
+            {former.map((p) => (
+              <Link className="it click" key={p.id} href={`/admin/players/${p.id}`}>
+                <div className="avatar">{initials(p)}</div>
+                <div className="grow">
+                  <div className="nm">{fullName(p)}</div>
+                  <div className="xs muted trunc">{p.email}</div>
+                </div>
+                <span className="pill warn">Archived</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {staff.length > 0 && (
         <div className="card">

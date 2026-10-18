@@ -5,6 +5,7 @@ import { Chat } from '@/app/_components/Chat'
 import { Notes } from '@/app/_components/Notes'
 import { Tasks } from '@/app/_components/Tasks'
 import { Files } from '@/app/_components/Files'
+import { LeaveSquad } from '@/app/_components/LeaveSquad'
 import { createClient } from '@/lib/supabase/server'
 import { requireActive, fullName, type Profile } from '@/lib/auth'
 import { loadFiles, loadNotes, loadRoster, loadTasks, loadThread } from '@/lib/hub'
@@ -47,7 +48,10 @@ export default async function PlayerDetail({
       </div>
       <div className="page-h">
         <h2>{fullName(player)}</h2>
-        <p>{player.email}{player.class_year ? ` · ${player.class_year}` : ''}</p>
+        <p>
+          {player.email}{player.class_year ? ` · ${player.class_year}` : ''}
+          {player.status === 'archived' && <span className="pill warn" style={{ marginLeft: 8 }}>Archived</span>}
+        </p>
       </div>
 
       <div className="grid2">
@@ -119,6 +123,14 @@ export default async function PlayerDetail({
           placeholder={`Nothing yet. Write the first message to ${player.first_name}.`}
         />
       </div>
+
+      {!player.is_owner && (
+        <LeaveSquad
+          id={player.id}
+          name={fullName(player)}
+          archived={player.status === 'archived'}
+        />
+      )}
     </Shell>
   )
 }

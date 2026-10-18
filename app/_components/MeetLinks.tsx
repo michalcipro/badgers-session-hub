@@ -4,8 +4,10 @@ import { useActionState } from 'react'
 import { czDay, czTime, usTime } from '@/lib/time'
 import type { SlotRow } from '@/lib/week'
 import { releaseBooking, setMeetUrl, type ActionResult } from '@/app/slot-actions'
+import { Attendance } from './Attendance'
 
-export function MeetLinks({ slots }: { slots: SlotRow[] }) {
+export function MeetLinks({ slots, nowISO }: { slots: SlotRow[]; nowISO: string }) {
+  const now = new Date(nowISO).getTime()
   const [linkState, linkAction, linkPending] = useActionState<ActionResult, FormData>(setMeetUrl, {})
   const [relState, relAction] = useActionState<ActionResult, FormData>(releaseBooking, {})
 
@@ -61,12 +63,15 @@ export function MeetLinks({ slots }: { slots: SlotRow[] }) {
                 ? <div className="xs muted trunc" style={{ marginTop: 4, maxWidth: 300 }}>{s.meet_url}</div>
                 : <div className="xs" style={{ marginTop: 4, color: 'var(--warn)' }}>No Meet link yet</div>}
             </div>
-            {s.booking_id && (
-              <form action={relAction}>
-                <input type="hidden" name="booking_id" value={s.booking_id} />
-                <button className="btn ghost sm" type="submit">Release</button>
-              </form>
-            )}
+            {s.booking_id &&
+              (new Date(s.starts_at).getTime() < now ? (
+                <Attendance bookingId={s.booking_id} attended={s.attended} />
+              ) : (
+                <form action={relAction}>
+                  <input type="hidden" name="booking_id" value={s.booking_id} />
+                  <button className="btn ghost sm" type="submit">Release</button>
+                </form>
+              ))}
           </div>
         ))}
       </div>
