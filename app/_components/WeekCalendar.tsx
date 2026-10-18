@@ -7,6 +7,7 @@ import {
   minuteLabel, minutesInDay, timeIn, usDay, usTime, type CalDate,
 } from '@/lib/time'
 import type { SlotRow } from '@/lib/week'
+import { LANES } from '@/lib/lanes'
 import {
   bookSlot, cancelBooking, createSlot, deleteSlot,
   type ActionResult,
@@ -222,7 +223,11 @@ export function WeekCalendar(props: Props) {
 
                   {(() => { const place = placed(mine); return mine.map((s) => {
                     const p = place.get(s.id) ?? { col: 0, cols: 1 }
-                    const span = 100 / p.cols
+                    // Winning Minds is two people. Even when only one call sits
+                    // in an hour, the other half stays empty and clickable so the
+                    // second of them can be offered there.
+                    const cols = mode === 'admin' ? Math.max(p.cols, LANES) : p.cols
+                    const span = 100 / cols
                     const past = new Date(s.starts_at).getTime() <= now
                     const isMine = s.booked_by === meId
                     const cls = past ? 'past' : isMine ? 'mine' : s.booking_id ? 'taken' : 'free'
