@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { requireActive } from '@/lib/auth'
-import { TZ_CZ, addDays, dayKey, dayStart, mondayOf, type CalDate } from '@/lib/time'
+import { TZ_CZ, addDays, dayKey, dayStart, mondayOf, ymd, type CalDate } from '@/lib/time'
 import { MAX_WEEKS, planRepeat, weeksBetween } from '@/lib/repeat'
 
 export type SeriesResult = { error?: string; ok?: string }
@@ -126,8 +126,22 @@ export async function endSeries(_p: SeriesResult, fd: FormData): Promise<SeriesR
     if (delError) return { error: delError.message }
   }
 
-  const today = new Date().toISOString().slice(0, 10)
-  await supabase.from('slot_series').update({ ends_on: today }).eq('id', id)
+  // Today in Prague, never earlier than the week it started: a schedule
+  // stopped the same week it began still ends on its own first day.
+  const today = dayKey(ymd(new Date().toISOString(), TZ_CZ))
+  const { data: row } = await supabase
+    .from('slot_series')
+    .select('source_week')
+    .eq('id', id)
+    .maybeSingle()
+
+  const endsOn = row && today < row.source_week ? row.source_week : today
+  const { error: endError } = await supabase
+    .from('slot_series')
+    .update({ ends_on: endsOn })
+    .eq('id', id)
+
+  if (endError) return { error: endError.message }
 
   revalidatePath('/admin/schedule')
   return {
