@@ -17,35 +17,47 @@ delete the old `default` secret key from the ⋮ menu.
 
 Nothing else uses it yet, so nothing breaks.
 
+## Where it stands
+
+Deployed and running at **https://badgers-session-hub.vercel.app** against
+the live Frankfurt database. The domain does not point there yet, so only
+someone who knows this address can reach it.
+
+The account is on Vercel's **Hobby** plan. Two consequences:
+
+- Hobby allows only one cron run a day, so the reminder is set to
+  `0 16 * * *` (18:00 Prague, 11:00 Madison) instead of hourly. Every
+  booking still gets exactly one reminder, sent during the day before the
+  call rather than 24 hours ahead to the hour.
+- Hobby is for personal, non-commercial use. Running a company's tool on
+  it is outside those terms. Upgrading to Pro ($20/month) settles that and
+  lets the cron go back to `0 * * * *`.
+
 ## 2. Create the Vercel project and set the environment
 
-From the repo:
-
-```bash
-vercel link
-```
-
-Then the four values, all for **Production** (and Preview, if you want
-preview deployments to work):
+Done. The project `badgers-session-hub` is linked to the GitHub repo, so
+every push to `main` deploys itself. These four are set for Production:
 
 | Variable | Where it comes from |
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase publishable key |
 | `SUPABASE_SERVICE_ROLE_KEY` | the **new** secret key from step 1 |
-| `CRON_SECRET` | already generated in `.env.local` |
+| `CRON_SECRET` | generated, in `.env.local` and in Vercel |
+
+When you rotate the service role key, change it in **both** `.env.local`
+and Vercel, or the reminder cron stops working.
 
 `RESEND_API_KEY` and `EMAIL_FROM` stay empty until email is set up. Booking
 works without them; the confirmation and reminder are simply skipped.
 
-## 3. Deploy a preview first
+## 3. Deploy
 
 ```bash
-vercel deploy
+vercel deploy --prod
 ```
 
-Open the preview URL and sign in. If that works, the production deployment
-will too.
+Done once already; pushing to `main` does it automatically from now on.
 
 ## 4. Point the domain — **you**
 
@@ -69,17 +81,11 @@ Supabase → **Authentication → URL Configuration**:
 
 Without this, password resets and confirmation links point at localhost.
 
-## 6. Go live
+## 6. Check it on the real domain
 
-```bash
-vercel deploy --prod
-```
-
-## 7. Check it
-
-- Sign in as yourself on the real domain
-- Offer a time in Availability, confirm it appears
-- Vercel → **Cron Jobs**: the hourly reminder should be listed
+- Sign in as yourself
+- Offer a time in Availability and confirm it appears
+- Vercel → **Cron Jobs**: the daily reminder should be listed
 
 ## Still open
 
