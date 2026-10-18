@@ -3,17 +3,12 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 /** How many calls Winning Minds can run side by side — Michal and Milan. */
 export const LANES = 2
 
-/**
- * Which lane is free at a given time, or null when they all are taken.
- *
- * A lane is a position, not a person: the two of them sort out between
- * themselves who takes which call, and nothing here needs to know.
- */
-export async function freeLane(
+/** The lanes busy over a stretch of time — one query, used by both callers. */
+async function takenLanes(
   supabase: SupabaseClient,
   startsAt: string,
   durationMin: number
-): Promise<number | null> {
+): Promise<Set<number>> {
   const start = new Date(startsAt).getTime()
   const end = start + durationMin * 60_000
   const window = 3 * 60 * 60_000 // the longest slot is an hour, so this is ample
@@ -30,7 +25,31 @@ export async function freeLane(
     const sEnd = sStart + s.duration_min * 60_000
     if (sStart < end && start < sEnd) taken.add(s.lane)
   }
+  return taken
+}
 
+/** Whether one particular lane is open — the column somebody clicked. */
+export async function laneIsFree(
+  supabase: SupabaseClient,
+  startsAt: string,
+  durationMin: number,
+  lane: number
+): Promise<boolean> {
+  return !(await takenLanes(supabase, startsAt, durationMin)).has(lane)
+}
+
+/**
+ * Which lane is free at a given time, or null when they all are taken.
+ *
+ * A lane is a position, not a person: the two of them sort out between
+ * themselves who takes which call, and nothing here needs to know.
+ */
+export async function freeLane(
+  supabase: SupabaseClient,
+  startsAt: string,
+  durationMin: number
+): Promise<number | null> {
+  const taken = await takenLanes(supabase, startsAt, durationMin)
   for (let lane = 1; lane <= LANES; lane++) if (!taken.has(lane)) return lane
   return null
 }

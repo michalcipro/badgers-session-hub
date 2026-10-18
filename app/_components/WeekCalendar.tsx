@@ -182,11 +182,14 @@ export function WeekCalendar(props: Props) {
 
   // ------------------------------------------------- what each side draws
 
-  /** Winning Minds sees the two lanes as they are: two separate offers. */
-  function adminBlock(s: SlotRow, p: { col: number; cols: number }) {
-    // Even when only one call sits in an hour, the other half stays empty
-    // and clickable so the second of them can be offered there.
-    const style = box({ col: p.col, cols: Math.max(p.cols, LANES) }, s.starts_at, s.duration_min)
+  /**
+   * Winning Minds sees the two lanes as they are: a day is two columns,
+   * one for each of them, and a call sits in the column it was offered
+   * in. The other column stays empty and clickable whatever happens in
+   * this one, so the second of them is always one click away.
+   */
+  function adminBlock(s: SlotRow) {
+    const style = box({ col: s.lane - 1, cols: LANES }, s.starts_at, s.duration_min)
     const past = new Date(s.starts_at).getTime() <= now
     const h = height(s.duration_min)
     const who = s.booked_name ?? (past ? 'Not used' : 'Free')
@@ -379,12 +382,13 @@ export function WeekCalendar(props: Props) {
             {days.map((d) => {
               const dk = dayKey(d)
               const mine = slotsOn(d)
-              const items: Span[] = mode === 'admin' ? mine : groupByTime(mine)
-              const place = placed(items)
+              const groups = mode === 'admin' ? [] : groupByTime(mine)
+              const place = placed(groups)
               const at = (id: string) => place.get(id) ?? { col: 0, cols: 1 }
 
               return (
-                <div className="cal-col" key={dk} style={{ height: rows * HOUR_H }}>
+                <div className={`cal-col${mode === 'admin' ? ' lanes' : ''}`} key={dk}
+                  style={{ height: rows * HOUR_H }}>
                   {Array.from({ length: rows }, (_, i) => (
                     <div key={`h${i}`} className="hr" style={{ top: i * HOUR_H }} />
                   ))}
@@ -395,24 +399,32 @@ export function WeekCalendar(props: Props) {
                   {mode === 'admin' &&
                     Array.from({ length: (rows * 60) / STEP }, (_, i) => {
                       const minute = startH * 60 + i * STEP
-                      return (
-                        <form action={addAction} key={`a${i}`}>
+                      const when = `${calFmt(d, { weekday: 'long', month: 'long', day: 'numeric' })} at ${minuteLabel(minute, tz)}`
+                      return Array.from({ length: LANES }, (_, l) => (
+                        <form action={addAction} key={`a${i}-${l}`}>
                           <input type="hidden" name="date" value={dk} />
                           <input type="hidden" name="minute" value={minute} />
                           <input type="hidden" name="duration" value={duration} />
+                          <input type="hidden" name="lane" value={l + 1} />
                           <button
                             type="submit"
                             className="cal-add"
-                            style={{ top: (i * STEP * HOUR_H) / 60, height: (STEP * HOUR_H) / 60 }}
-                            aria-label={`Offer ${calFmt(d, { weekday: 'long', month: 'long', day: 'numeric' })} at ${minuteLabel(minute, tz)}`}
+                            style={{
+                              top: (i * STEP * HOUR_H) / 60,
+                              height: (STEP * HOUR_H) / 60,
+                              left: `calc(${(l * 100) / LANES}% + 1px)`,
+                              width: `calc(${100 / LANES}% - 2px)`,
+                              right: 'auto',
+                            }}
+                            aria-label={`Offer ${when}, column ${l + 1} of ${LANES}`}
                           />
                         </form>
-                      )
+                      ))
                     })}
 
                   {mode === 'admin'
-                    ? mine.map((s) => adminBlock(s, at(s.id)))
-                    : (items as Group[]).map((g) => playerBlock(g, at(g.id)))}
+                    ? mine.map((s) => adminBlock(s))
+                    : groups.map((g) => playerBlock(g, at(g.id)))}
                 </div>
               )
             })}

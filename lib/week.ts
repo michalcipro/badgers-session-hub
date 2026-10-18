@@ -9,6 +9,8 @@ export type SlotRow = {
   duration_min: number
   meet_url: string | null
   kind: 'player' | 'consultation'
+  /** Which of the two of us runs it. A position, not a person. */
+  lane: number
   booking_id: string | null
   booked_by: string | null
   attended: boolean | null

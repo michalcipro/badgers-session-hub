@@ -203,6 +203,12 @@ input[type=file] {
 }
 .cal-hour span { position: relative; top: -6px }
 .cal-col { position: relative; border-left: 1px solid var(--line) }
+/* Winning Minds is two people, so a day they are offering is two columns.
+   The hairline is what makes the second one visible before anything is in it. */
+.cal-col.lanes::after {
+  content: ''; position: absolute; inset: 0 auto 0 50%;
+  border-left: 1px dashed var(--line); pointer-events: none;
+}
 .cal-col .hr { position: absolute; left: 0; right: 0; border-top: 1px solid var(--line) }
 .cal-col .hr.half { border-top-style: dotted; opacity: .55 }
 

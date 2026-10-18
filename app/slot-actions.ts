@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireActive } from '@/lib/auth'
 import { bookingConfirmation, sendEmail } from '@/lib/email'
 import { TZ_CZ, addDays, dayStart, mondayOf, ymd, zonedToUTC } from '@/lib/time'
-import { freeLane } from '@/lib/lanes'
+import { LANES, freeLane, laneIsFree } from '@/lib/lanes'
 
 export type ActionResult = { error?: string; ok?: string }
 
@@ -18,6 +18,7 @@ export async function createSlot(_p: ActionResult, fd: FormData): Promise<Action
   const date = String(fd.get('date') ?? '')           // YYYY-MM-DD, Prague
   const minute = Number(fd.get('minute') ?? NaN)      // minutes since midnight
   const duration = Number(fd.get('duration') ?? 45)
+  const asked = Number(fd.get('lane') ?? NaN)         // which column was clicked
 
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !Number.isFinite(minute)) {
     return { error: 'That time could not be read.' }
@@ -29,12 +30,15 @@ export async function createSlot(_p: ActionResult, fd: FormData): Promise<Action
 
   const supabase = await createClient()
 
-  // Two of you, so the same hour can hold two calls. Which lane it lands
-  // in is just first or second — you sort out between yourselves who
-  // takes whom.
-  const lane = await freeLane(supabase, startsAt, duration)
+  // Two of you, so a day is two columns. The column that was clicked is
+  // the lane; which of you ends up taking it is your business, not the
+  // app's. Older callers send no column, so fall back to either.
+  const lane = Number.isInteger(asked) && asked >= 1 && asked <= LANES
+    ? ((await laneIsFree(supabase, startsAt, duration, asked)) ? asked : null)
+    : await freeLane(supabase, startsAt, duration)
+
   if (lane === null) {
-    return { error: 'You already offer two calls then — that is both of you.' }
+    return { error: 'That column is already busy then. Try the other one.' }
   }
 
   const { error } = await supabase

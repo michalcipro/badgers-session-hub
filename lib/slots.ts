@@ -10,6 +10,7 @@ type RawSlot = {
   duration_min: number
   meet_url: string | null
   kind: 'player' | 'consultation'
+  lane: number
   /**
    * bookings.slot_id is unique, so PostgREST treats this as a to-one
    * relationship and sends an object rather than an array. Older versions
@@ -41,7 +42,7 @@ export async function loadWeekSlots(
   const [{ data: slots }, { data: roster }] = await Promise.all([
     supabase
       .from('slots')
-      .select('id, starts_at, duration_min, meet_url, kind, bookings(id, player_id, attended)')
+      .select('id, starts_at, duration_min, meet_url, kind, lane, bookings(id, player_id, attended)')
       .gte('starts_at', fromISO)
       .lt('starts_at', toISO)
       .order('starts_at'),
@@ -92,6 +93,7 @@ export async function loadWeekSlots(
       duration_min: s.duration_min,
       meet_url: s.meet_url,
       kind: s.kind,
+      lane: s.lane,
       booking_id: booking?.id ?? null,
       booked_by: booking?.player_id ?? coachId,
       attended: booking?.attended ?? null,
