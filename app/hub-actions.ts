@@ -41,6 +41,53 @@ export async function sendMessage(_p: ActionResult, fd: FormData): Promise<Actio
   return {}
 }
 
+/**
+ * The same message to several people at once — the start of a week, a
+ * change of plan, a file worth reading.
+ *
+ * It is not a group chat: each person gets it in her own thread, so a
+ * reply comes back privately and nobody learns who else was written to.
+ * That is the same rule as everywhere else here, and it is the reason
+ * this is a loop rather than a new kind of row.
+ */
+export async function broadcastMessage(_p: ActionResult, fd: FormData): Promise<ActionResult> {
+  const me = await requireActive('admin')
+  const body = String(fd.get('body') ?? '').trim()
+  const asked = fd.getAll('to').map(String).filter(Boolean)
+
+  if (!body) return { error: 'Write something first.' }
+  if (body.length > 4000) return { error: 'That message is too long.' }
+  if (asked.length === 0) return { error: 'Pick who it goes to.' }
+
+  const supabase = await createClient()
+
+  // Never trust the list that came back from the page: only people who
+  // are really on the squad, and never yourself.
+  const { data: real, error: lookup } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('status', 'active')
+    .neq('id', me.id)
+    .in('id', asked)
+
+  if (lookup) return { error: lookup.message }
+
+  const ids = (real ?? []).map((p) => p.id as string)
+  if (ids.length === 0) return { error: 'None of those people are on the squad.' }
+
+  const { error } = await supabase
+    .from('messages')
+    .insert(ids.map((id) => ({ subject_id: id, sender_id: me.id, body })))
+
+  if (error) return { error: error.message }
+
+  revalidatePath('/admin/messages')
+  revalidatePath('/messages')
+  return {
+    ok: `Sent to ${ids.length} ${ids.length === 1 ? 'person' : 'people'}, each in their own thread.`,
+  }
+}
+
 // -------------------------------------------------------------------- notes
 
 export async function addNote(_p: ActionResult, fd: FormData): Promise<ActionResult> {

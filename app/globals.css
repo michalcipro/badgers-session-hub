@@ -293,6 +293,17 @@ hr.sep { border: 0; border-top: 1px solid var(--line); margin: 0 }
 a.nm { color: inherit; text-decoration: none }
 a.nm:hover { color: var(--accent); text-decoration: underline }
 
+/* Who a message goes to: a wrapped row of names you tap on and off. */
+.picks { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px }
+.pick {
+  display: inline-flex; align-items: center; gap: 7px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface);
+  border-radius: 999px; padding: 5px 12px 5px 9px; font-size: 13px; max-width: 220px;
+}
+.pick:hover { background: var(--surface-2) }
+.pick.on { border-color: var(--fg); background: var(--fg); color: var(--surface) }
+.pick input { width: 14px; height: 14px; margin: 0; accent-color: var(--accent); flex: none }
+
 /* --------------------------------------------------------------- chat */
 .chat { display: flex; flex-direction: column; gap: 12px; padding: 18px; max-height: 440px; overflow-y: auto }
 .msg { max-width: min(78%, 460px); display: flex; flex-direction: column; gap: 3px }

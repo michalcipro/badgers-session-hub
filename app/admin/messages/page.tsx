@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { Shell } from '@/app/_components/Shell'
 import { Chat } from '@/app/_components/Chat'
+import { Broadcast } from '@/app/_components/Broadcast'
 import { createClient } from '@/lib/supabase/server'
 import { requireActive, fullName, initials, type Profile } from '@/lib/auth'
 import { loadRoster, loadThread } from '@/lib/hub'
@@ -48,6 +49,12 @@ export default async function AdminMessages({
         <h2>Messages</h2>
         <p>One thread per person. Nobody sees anyone else&rsquo;s.</p>
       </div>
+
+      {people.length > 1 && (
+        <Broadcast
+          people={people.map((p) => ({ id: p.id, name: fullName(p), role: p.role }))}
+        />
+      )}
 
       {people.length === 0 ? (
         <div className="card"><div className="bd sm muted">Nobody to write to yet.</div></div>

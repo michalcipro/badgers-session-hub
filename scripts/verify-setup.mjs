@@ -451,6 +451,26 @@ async function main() {
     return error ? error.message : null
   })
 
+  await check('one message can go to several threads at once', async () => {
+    const body = `broadcast ${stamp}`
+    const { error } = await A.client.from('messages').insert([
+      { subject_id: P.id, sender_id: A.id, body },
+      { subject_id: O.id, sender_id: A.id, body },
+    ])
+    if (error) return error.message
+
+    const { data } = await admin.from('messages').select('subject_id').eq('body', body)
+    const landed = new Set((data ?? []).map((m) => m.subject_id))
+    return landed.has(P.id) && landed.has(O.id) ? null : 'it did not reach both threads'
+  })
+
+  await check('a broadcast stays private to each thread', async () => {
+    const { data } = await P.client.from('messages').select('subject_id')
+    return (data ?? []).every((m) => m.subject_id === P.id)
+      ? null
+      : 'a player saw a copy addressed to somebody else'
+  })
+
   let taskId = null
   await check('Winning Minds can assign a task', async () => {
     const { data, error } = await A.client
