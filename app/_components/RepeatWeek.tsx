@@ -9,6 +9,18 @@ const day = (key: string) =>
     timeZone: 'UTC', day: 'numeric', month: 'short', year: 'numeric',
   }).format(new Date(`${key}T00:00:00Z`))
 
+/** Each control answers for itself, so one reply never hides another. */
+function Said({ state, inset }: { state: SeriesResult; inset?: boolean }) {
+  const text = state.error ?? state.ok
+  if (!text) return null
+  const note = (
+    <div className={state.error ? 'note bad' : 'note ok'} style={{ marginTop: 12 }}>
+      {text}
+    </div>
+  )
+  return inset ? <div className="bd" style={{ paddingTop: 0 }}>{note}</div> : note
+}
+
 /**
  * Setting a schedule up is three separate thoughts, so it is three
  * separate controls: roll this week forward, stop a schedule early,
@@ -28,9 +40,6 @@ export function RepeatWeek({
   const [repState, repAction, repPending] = useActionState<SeriesResult, FormData>(repeatWeek, {})
   const [endState, endAction, endPending] = useActionState<SeriesResult, FormData>(endSeries, {})
   const [dayState, dayAction, dayPending] = useActionState<SeriesResult, FormData>(clearDay, {})
-
-  const note = repState.error ?? endState.error ?? dayState.error
-  const done = repState.ok ?? endState.ok ?? dayState.ok
 
   return (
     <div className="card">
@@ -59,8 +68,7 @@ export function RepeatWeek({
           week, up to that date. Times that clash with something already there are skipped.
         </p>
 
-        {note && <div className="note bad" style={{ marginTop: 12 }}>{note}</div>}
-        {done && <div className="note ok" style={{ marginTop: 12 }}>{done}</div>}
+        <Said state={repState} />
 
         <form action={dayAction} className="row" style={{ gap: 12, alignItems: 'flex-end', marginTop: 16 }}>
           <label className="fld" style={{ flex: '0 1 200px' }}>
@@ -76,7 +84,10 @@ export function RepeatWeek({
           so nobody turns up to a call you forgot about. A single square you clear by
           clicking it in the grid.
         </p>
+        <Said state={dayState} />
       </div>
+
+      <Said state={endState} inset />
 
       {series.length > 0 && (
         <div className="list">
