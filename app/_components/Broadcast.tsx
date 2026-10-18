@@ -1,7 +1,8 @@
 'use client'
 
-import { useActionState, useEffect, useState } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
 import { broadcastMessage, type ActionResult } from '@/app/hub-actions'
+import { Attached } from './Chat'
 
 export type Recipient = {
   id: string
@@ -24,18 +25,22 @@ const GROUPS = [
 export function Broadcast({ people }: { people: Recipient[] }) {
   const [state, action, pending] = useActionState<ActionResult, FormData>(broadcastMessage, {})
   const [open, setOpen] = useState(false)
-  const [picked, setPicked] = useState<Set<string>>(new Set())
+  const [chosen, setChosen] = useState<Set<string>>(new Set())
   const [body, setBody] = useState('')
+  const [picked, setPicked] = useState<{ name: string; size: number } | null>(null)
+  const formRef = useRef<HTMLFormElement>(null)
 
   useEffect(() => {
     if (state.ok) {
       setBody('')
-      setPicked(new Set())
+      setPicked(null)
+      setChosen(new Set())
+      formRef.current?.reset()
     }
   }, [state.ok])
 
   const toggle = (id: string) =>
-    setPicked((was) => {
+    setChosen((was) => {
       const next = new Set(was)
       if (next.has(id)) next.delete(id)
       else next.add(id)
@@ -43,7 +48,7 @@ export function Broadcast({ people }: { people: Recipient[] }) {
     })
 
   const setGroup = (ids: string[], on: boolean) =>
-    setPicked((was) => {
+    setChosen((was) => {
       const next = new Set(was)
       for (const id of ids) {
         if (on) next.add(id)
@@ -54,10 +59,10 @@ export function Broadcast({ people }: { people: Recipient[] }) {
 
   const groups = GROUPS.map((g) => {
     const members = people.filter((p) => p.role === g.role)
-    return { ...g, members, all: members.length > 0 && members.every((p) => picked.has(p.id)) }
+    return { ...g, members, all: members.length > 0 && members.every((p) => chosen.has(p.id)) }
   }).filter((g) => g.members.length > 0)
 
-  const everyone = people.length > 0 && people.every((p) => picked.has(p.id))
+  const everyone = people.length > 0 && people.every((p) => chosen.has(p.id))
 
   if (!open) {
     return (
@@ -83,8 +88,8 @@ export function Broadcast({ people }: { people: Recipient[] }) {
         </button>
       </div>
 
-      <form className="bd" action={action}>
-        {[...picked].map((id) => (
+      <form className="bd" action={action} ref={formRef}>
+        {[...chosen].map((id) => (
           <input key={id} type="hidden" name="to" value={id} />
         ))}
 
@@ -113,10 +118,10 @@ export function Broadcast({ people }: { people: Recipient[] }) {
 
         <div className="picks">
           {people.map((p) => (
-            <label key={p.id} className={`pick${picked.has(p.id) ? ' on' : ''}`}>
+            <label key={p.id} className={`pick${chosen.has(p.id) ? ' on' : ''}`}>
               <input
                 type="checkbox"
-                checked={picked.has(p.id)}
+                checked={chosen.has(p.id)}
                 onChange={() => toggle(p.id)}
               />
               <span className="trunc">{p.name}</span>
@@ -133,6 +138,24 @@ export function Broadcast({ people }: { people: Recipient[] }) {
           style={{ marginTop: 14 }}
         />
 
+        <label className="clip pick-file" style={{ marginTop: 10 }}>
+          <span aria-hidden>📎</span>
+          <span>{picked ? picked.name : 'Attach a file'}</span>
+          <input
+            type="file"
+            name="file"
+            onChange={(e) => {
+              const f = e.target.files?.[0]
+              setPicked(f ? { name: f.name, size: f.size } : null)
+            }}
+          />
+        </label>
+        {picked && (
+          <div style={{ marginTop: 8 }}>
+            <Attached name={picked.name} size={picked.size} />
+          </div>
+        )}
+
         {state.error && <div className="note bad" style={{ marginTop: 12 }}>{state.error}</div>}
         {state.ok && <div className="note ok" style={{ marginTop: 12 }}>{state.ok}</div>}
 
@@ -140,13 +163,13 @@ export function Broadcast({ people }: { people: Recipient[] }) {
           <button
             className="btn primary"
             type="submit"
-            disabled={pending || picked.size === 0 || body.trim() === ''}
+            disabled={pending || chosen.size === 0 || (body.trim() === '' && !picked)}
           >
             {pending
               ? 'Sending…'
-              : picked.size === 0
+              : chosen.size === 0
                 ? 'Pick who it goes to'
-                : `Send to ${picked.size}`}
+                : `Send to ${chosen.size}`}
           </button>
           <span className="xs muted">
             Nobody sees who else got it, and replies come back privately.

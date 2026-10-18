@@ -30,19 +30,27 @@ export async function loadThread(
 ): Promise<ChatMessage[]> {
   const { data } = await supabase
     .from('messages')
-    .select('id, body, created_at, sender_id')
+    .select('id, body, created_at, sender_id, file_name, file_size')
     .eq('subject_id', subjectId)
     .order('created_at')
 
-  return ((data ?? []) as { id: string; body: string; created_at: string; sender_id: string }[])
-    .map((m) => {
-      const who = roster.get(m.sender_id)
-      return {
-        ...m,
-        sender_name: who ? who.first_name : 'Winning Minds',
-        from_winning_minds: who?.role === 'admin',
-      }
-    })
+  type Row = {
+    id: string
+    body: string
+    created_at: string
+    sender_id: string
+    file_name: string | null
+    file_size: number | null
+  }
+
+  return ((data ?? []) as Row[]).map((m) => {
+    const who = roster.get(m.sender_id)
+    return {
+      ...m,
+      sender_name: who ? who.first_name : 'Winning Minds',
+      from_winning_minds: who?.role === 'admin',
+    }
+  })
 }
 
 export async function loadTasks(supabase: SupabaseClient, playerId: string): Promise<TaskRow[]> {

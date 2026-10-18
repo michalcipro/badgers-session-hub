@@ -304,6 +304,17 @@ a.nm:hover { color: var(--accent); text-decoration: underline }
 .pick.on { border-color: var(--fg); background: var(--fg); color: var(--surface) }
 .pick input { width: 14px; height: 14px; margin: 0; accent-color: var(--accent); flex: none }
 
+/* A file riding along with a message, and the box you pick one in. */
+.clip {
+  display: inline-flex; align-items: center; gap: 7px; max-width: 270px;
+  border: 1px solid var(--line); background: var(--surface); color: inherit;
+  border-radius: 9px; padding: 6px 11px; font-size: 12.5px; text-decoration: none;
+}
+a.clip:hover { background: var(--surface-2); border-color: var(--fg-muted) }
+.pick-file { cursor: pointer; align-self: flex-start; color: var(--fg-muted) }
+.pick-file:hover { background: var(--surface-2); color: var(--fg) }
+.pick-file input { display: none }
+
 /* --------------------------------------------------------------- chat */
 .chat { display: flex; flex-direction: column; gap: 12px; padding: 18px; max-height: 440px; overflow-y: auto }
 .msg { max-width: min(78%, 460px); display: flex; flex-direction: column; gap: 3px }

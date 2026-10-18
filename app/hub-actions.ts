@@ -9,8 +9,40 @@ import { currentProfile, requireActive } from '@/lib/auth'
 export type ActionResult = { error?: string; ok?: string }
 
 const BUCKET = 'session-files'
+const MAX_BYTES = 25 * 1024 * 1024
 
 // ----------------------------------------------------------------- messages
+
+type Attachment = { file_path: string; file_name: string; file_size: number }
+
+/**
+ * Puts a message's attachment in storage and hands back what to record on
+ * the message. One object however many people it goes to — the copies are
+ * rows, not bytes.
+ *
+ * Returns null when there is no file, or a readable complaint when there
+ * is one and it will not do.
+ */
+async function stashAttachment(
+  value: FormDataEntryValue | null
+): Promise<{ at: Attachment | null } | { error: string }> {
+  if (!(value instanceof File) || value.size === 0) return { at: null }
+  if (value.size > MAX_BYTES) return { error: 'That file is larger than 25 MB.' }
+
+  const safe = value.name.replace(/[^\w.\-]+/g, '_').slice(-80)
+  const path = `${randomUUID()}-${safe}`
+
+  const { error } = await createAdminClient()
+    .storage.from(BUCKET)
+    .upload(path, value, { contentType: value.type || 'application/octet-stream' })
+
+  if (error) return { error: `Upload failed: ${error.message}` }
+  return { at: { file_path: path, file_name: value.name, file_size: value.size } }
+}
+
+/** Takes an attachment back out again when the row it belonged to never landed. */
+const unstash = (at: Attachment | null) =>
+  at ? createAdminClient().storage.from(BUCKET).remove([at.file_path]) : Promise.resolve()
 
 /**
  * A thread belongs to one person and Winning Minds. A player writes in her
@@ -22,18 +54,24 @@ export async function sendMessage(_p: ActionResult, fd: FormData): Promise<Actio
   const subjectId = String(fd.get('subject_id') ?? '')
   const body = String(fd.get('body') ?? '').trim()
 
-  if (!body) return {}
   if (body.length > 4000) return { error: 'That message is too long.' }
   if (me.role !== 'admin' && subjectId !== me.id) {
     return { error: 'You can only write in your own conversation.' }
   }
 
+  const stashed = await stashAttachment(fd.get('file'))
+  if ('error' in stashed) return { error: stashed.error }
+  if (!body && !stashed.at) return {}
+
   const supabase = await createClient()
   const { error } = await supabase
     .from('messages')
-    .insert({ subject_id: subjectId, sender_id: me.id, body })
+    .insert({ subject_id: subjectId, sender_id: me.id, body, ...(stashed.at ?? {}) })
 
-  if (error) return { error: error.message }
+  if (error) {
+    await unstash(stashed.at)
+    return { error: error.message }
+  }
 
   revalidatePath('/admin/messages')
   revalidatePath(`/admin/players/${subjectId}`)
@@ -55,7 +93,6 @@ export async function broadcastMessage(_p: ActionResult, fd: FormData): Promise<
   const body = String(fd.get('body') ?? '').trim()
   const asked = fd.getAll('to').map(String).filter(Boolean)
 
-  if (!body) return { error: 'Write something first.' }
   if (body.length > 4000) return { error: 'That message is too long.' }
   if (asked.length === 0) return { error: 'Pick who it goes to.' }
 
@@ -75,16 +112,25 @@ export async function broadcastMessage(_p: ActionResult, fd: FormData): Promise<
   const ids = (real ?? []).map((p) => p.id as string)
   if (ids.length === 0) return { error: 'None of those people are on the squad.' }
 
+  const stashed = await stashAttachment(fd.get('file'))
+  if ('error' in stashed) return { error: stashed.error }
+  if (!body && !stashed.at) return { error: 'Write something, or attach a file.' }
+
   const { error } = await supabase
     .from('messages')
-    .insert(ids.map((id) => ({ subject_id: id, sender_id: me.id, body })))
+    .insert(ids.map((id) => ({ subject_id: id, sender_id: me.id, body, ...(stashed.at ?? {}) })))
 
-  if (error) return { error: error.message }
+  if (error) {
+    await unstash(stashed.at)
+    return { error: error.message }
+  }
 
   revalidatePath('/admin/messages')
   revalidatePath('/messages')
   return {
-    ok: `Sent to ${ids.length} ${ids.length === 1 ? 'person' : 'people'}, each in their own thread.`,
+    ok:
+      `Sent to ${ids.length} ${ids.length === 1 ? 'person' : 'people'}, each in their own thread` +
+      (stashed.at ? `, with ${stashed.at.file_name}.` : '.'),
   }
 }
 
@@ -178,7 +224,6 @@ export async function deleteTask(_p: ActionResult, fd: FormData): Promise<Action
 
 // -------------------------------------------------------------------- files
 
-const MAX_BYTES = 25 * 1024 * 1024
 
 export async function uploadFile(_p: ActionResult, fd: FormData): Promise<ActionResult> {
   const me = await requireActive('admin')
@@ -241,6 +286,27 @@ export async function deleteFile(_p: ActionResult, fd: FormData): Promise<Action
  * whether they may have it, then signs a short-lived URL.
  * Returns null when they may not.
  */
+/** The same, for a file that came attached to a message. */
+export async function signedMessageFileUrl(id: string): Promise<string | null> {
+  const me = await currentProfile()
+  if (!me || me.status !== 'active') return null
+
+  const supabase = await createClient()
+  const { data: row } = await supabase
+    .from('messages')
+    .select('file_path, file_name')
+    .eq('id', id)
+    .maybeSingle()
+
+  if (!row?.file_path) return null
+
+  const { data } = await createAdminClient()
+    .storage.from(BUCKET)
+    .createSignedUrl(row.file_path, 60, { download: row.file_name ?? undefined })
+
+  return data?.signedUrl ?? null
+}
+
 export async function signedFileUrl(id: string): Promise<string | null> {
   const me = await currentProfile()
   if (!me || me.status !== 'active') return null

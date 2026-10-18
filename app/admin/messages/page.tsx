@@ -20,11 +20,15 @@ export default async function AdminMessages({
     .from('profiles')
     .select('*')
     .eq('status', 'active')
-    .neq('id', me.id)
     .order('last_name')
 
-  const people = (profiles ?? []) as Profile[]
-  const selected = people.find((p) => p.id === withId) ?? people[0]
+  const everyone = (profiles ?? []) as Profile[]
+  // Your own thread is where anything written TO you lands, including a
+  // message from the other half of Winning Minds. Leaving it out of this
+  // list is how it went unread.
+  const others = everyone.filter((p) => p.id !== me.id)
+  const threads = [...everyone.filter((p) => p.id === me.id), ...others]
+  const selected = threads.find((p) => p.id === withId) ?? others[0] ?? threads[0]
 
   const roster = await loadRoster(supabase)
   const messages = selected ? await loadThread(supabase, selected.id, roster) : []
@@ -40,7 +44,10 @@ export default async function AdminMessages({
   for (const m of (last ?? []) as { subject_id: string; sender_id: string }[]) {
     if (seen.has(m.subject_id)) continue
     seen.add(m.subject_id)
-    if (m.sender_id === m.subject_id) waiting.add(m.subject_id)
+    // Somebody else had the last word: in their thread that is them, and
+    // in your own it is whoever wrote to you.
+    const theirs = m.subject_id === me.id ? m.sender_id !== me.id : m.sender_id === m.subject_id
+    if (theirs) waiting.add(m.subject_id)
   }
 
   return (
@@ -50,19 +57,19 @@ export default async function AdminMessages({
         <p>One thread per person. Nobody sees anyone else&rsquo;s.</p>
       </div>
 
-      {people.length > 1 && (
+      {others.length > 1 && (
         <Broadcast
-          people={people.map((p) => ({ id: p.id, name: fullName(p), role: p.role }))}
+          people={others.map((p) => ({ id: p.id, name: fullName(p), role: p.role }))}
         />
       )}
 
-      {people.length === 0 ? (
+      {others.length === 0 ? (
         <div className="card"><div className="bd sm muted">Nobody to write to yet.</div></div>
       ) : (
         <div className="split">
           <div className="card">
             <div className="list">
-              {people.map((p) => (
+              {threads.map((p) => (
                 <Link
                   className="it click"
                   key={p.id}
@@ -71,8 +78,12 @@ export default async function AdminMessages({
                 >
                   <div className="avatar">{initials(p)}</div>
                   <div className="grow">
-                    <div className="nm trunc">{fullName(p)}</div>
-                    <div className="xs muted">{p.role === 'player' ? 'Player' : p.role === 'coach' ? 'Coach' : 'Winning Minds'}</div>
+                    <div className="nm trunc">{p.id === me.id ? 'You' : fullName(p)}</div>
+                    <div className="xs muted">
+                      {p.id === me.id
+                        ? 'Written to you'
+                        : p.role === 'player' ? 'Player' : p.role === 'coach' ? 'Coach' : 'Winning Minds'}
+                    </div>
                   </div>
                   {waiting.has(p.id) && <span className="pill ok">New</span>}
                 </Link>
@@ -84,7 +95,7 @@ export default async function AdminMessages({
             {selected && (
               <>
                 <div className="hd">
-                  <h3>{fullName(selected)}</h3>
+                  <h3>{selected.id === me.id ? 'Written to you' : fullName(selected)}</h3>
                   {selected.role === 'player' && (
                     <Link className="btn ghost sm" style={{ marginLeft: 'auto' }} href={`/admin/players/${selected.id}`}>
                       Open profile
