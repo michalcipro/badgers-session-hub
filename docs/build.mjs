@@ -6,9 +6,13 @@
  *   node build.mjs
  */
 import { readFileSync, writeFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const SRC = 'session-hub.html';
-const OUT = 'index.html';
+const HERE = dirname(fileURLToPath(import.meta.url));
+
+const SRC = join(HERE, 'session-hub.html');
+const OUT = join(HERE, 'index.html');
 const SPLIT = '<div class="demo">';
 
 const src = readFileSync(SRC, 'utf8');
