@@ -1,0 +1,1031 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Badgers Session Hub</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: fixed left rail of sections, one scrolling column of cards; every time is a dual-zone chip (Prague 24h / Madison 12h). */
+:root{
+  --bg:#faf8f7; --surface:#ffffff; --surface-2:#f3f0ee; --line:#e4dfdb;
+  --fg:#1b1716; --fg-muted:#6f6662; --fg-faint:#9b928d;
+  --accent:#a8211f; --accent-soft:#fbeceb; --accent-line:#efcfcd;
+  --good:#1c7550; --good-soft:#e7f4ee;
+  --warn:#8d5c00; --warn-soft:#fbf0db;
+  --info:#2d5a9e; --info-soft:#e9effa;
+  --display:'Archivo', 'Helvetica Neue', Arial, sans-serif;
+  --body:'Public Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --r:10px; --shadow:0 1px 2px rgba(27,23,22,.06), 0 6px 18px rgba(27,23,22,.04);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141211; --surface:#1d1b1a; --surface-2:#262322; --line:#363230;
+    --fg:#f2efed; --fg-muted:#a69e99; --fg-faint:#7d7571;
+    --accent:#f2726d; --accent-soft:#38201f; --accent-line:#55302e;
+    --good:#52c48d; --good-soft:#15291f;
+    --warn:#dca63f; --warn-soft:#2b2214;
+    --info:#7ea7e8; --info-soft:#17212f;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.25);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141211; --surface:#1d1b1a; --surface-2:#262322; --line:#363230;
+  --fg:#f2efed; --fg-muted:#a69e99; --fg-faint:#7d7571;
+  --accent:#f2726d; --accent-soft:#38201f; --accent-line:#55302e;
+  --good:#52c48d; --good-soft:#15291f;
+  --warn:#dca63f; --warn-soft:#2b2214;
+  --info:#7ea7e8; --info-soft:#17212f;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 6px 18px rgba(0,0,0,.25);
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box}
+html,body{min-height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{font-family:var(--display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+p{margin:0}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+/* ---------- demo strip ---------- */
+.demo{background:var(--fg);color:var(--bg)}
+.demo-in{display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;padding-block:8px;max-width:1240px;margin:0 auto;font-size:12.5px}
+.demo b{font-family:var(--display);font-weight:600;letter-spacing:.06em;text-transform:uppercase;font-size:11px;opacity:.65}
+.roles{display:flex;gap:4px;background:rgba(127,127,127,.25);padding:3px;border-radius:999px}
+.roles button{background:none;border:0;padding:4px 11px;border-radius:999px;cursor:pointer;font-size:12.5px;font-weight:500;opacity:.8}
+.roles button[aria-pressed="true"]{background:var(--bg);color:var(--fg);opacity:1}
+.demo .clock{margin-left:auto;display:flex;gap:14px;font-variant-numeric:tabular-nums;opacity:.85}
+
+/* ---------- header ---------- */
+header.top{background:var(--surface);border-bottom:1px solid var(--line);position:sticky;top:env(safe-area-inset-top,0px);z-index:20}
+.top-in{max-width:1240px;margin:0 auto;padding-block:12px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.mark{display:flex;align-items:center;gap:10px;min-width:0}
+.mark .dot{width:28px;height:28px;border-radius:7px;background:var(--accent);color:#fff;display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:13px;flex:none}
+.mark h1{font-size:15.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mark span{display:block;font-family:var(--body);font-size:12px;color:var(--fg-muted);font-weight:400}
+.whoami{margin-left:auto;display:flex;align-items:center;gap:9px;font-size:13px;color:var(--fg-muted)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--surface-2);border:1px solid var(--line);display:grid;place-items:center;font-size:11.5px;font-weight:600;font-family:var(--display);color:var(--fg);flex:none}
+
+/* ---------- shell ---------- */
+.shell{max-width:1240px;margin:0 auto;display:grid;grid-template-columns:208px minmax(0,1fr);gap:28px;padding-block:22px 64px;align-items:start}
+nav.rail{position:sticky;top:76px;display:flex;flex-direction:column;gap:2px}
+nav.rail button{display:flex;align-items:center;gap:9px;width:100%;text-align:left;background:none;border:0;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--fg-muted);font-size:14px;font-weight:500}
+nav.rail button:hover{background:var(--surface-2);color:var(--fg)}
+nav.rail button[aria-current="page"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+nav.rail .count{margin-left:auto;background:var(--accent);color:#fff;border-radius:999px;font-size:11px;padding:1px 6px;font-weight:600;font-variant-numeric:tabular-nums}
+nav.rail .ico{width:16px;text-align:center;opacity:.8;flex:none}
+main{min-width:0;display:flex;flex-direction:column;gap:18px}
+
+@media (max-width:860px){
+  .shell{grid-template-columns:minmax(0,1fr);gap:16px;padding-block:14px 56px}
+  nav.rail{position:static;flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:4px;scrollbar-width:thin}
+  nav.rail button{width:auto;white-space:nowrap;background:var(--surface);border:1px solid var(--line)}
+  nav.rail .ico{display:none}
+  .demo .clock{margin-left:0;width:100%}
+}
+
+/* ---------- primitives ---------- */
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.card>.hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:14px 16px;border-bottom:1px solid var(--line)}
+.card>.hd h2{font-size:14px;font-weight:600}
+.card>.hd .sub{font-size:12.5px;color:var(--fg-muted)}
+.card>.bd{padding:16px}
+.card>.bd.tight{padding:0}
+.eyebrow{font-family:var(--display);font-size:10.5px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--fg-faint)}
+.page-h{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.page-h h2{font-size:22px;font-weight:700}
+.page-h p{font-size:13.5px;color:var(--fg-muted)}
+.muted{color:var(--fg-muted)}
+.faint{color:var(--fg-faint)}
+.sm{font-size:13px}
+.xs{font-size:12px}
+.num{font-variant-numeric:tabular-nums}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.spread{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px}
+.grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+hr.sep{border:0;border-top:1px solid var(--line);margin:0}
+
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);padding:7px 13px;border-radius:7px;cursor:pointer;font-size:13.5px;font-weight:500}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghost{border-color:transparent;background:none;color:var(--fg-muted);padding:6px 8px}
+.btn.ghost:hover{background:var(--surface-2);color:var(--fg)}
+.btn.sm{padding:4px 9px;font-size:12.5px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:2.5px 8px;border-radius:999px;border:1px solid transparent;white-space:nowrap}
+.pill.open{background:var(--surface-2);color:var(--fg-muted);border-color:var(--line)}
+.pill.booked{background:var(--good-soft);color:var(--good)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.info{background:var(--info-soft);color:var(--info)}
+.pill.accent{background:var(--accent-soft);color:var(--accent)}
+.pill.done{background:var(--surface-2);color:var(--fg-faint);border-color:var(--line)}
+
+input[type=text],input[type=email],input[type=date],input[type=time],input[type=number],select,textarea{
+  background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 10px;font-size:13.5px;width:100%;min-width:0}
+textarea{resize:vertical;line-height:1.45}
+label.fld{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--fg-muted);font-weight:500;min-width:0}
+
+/* ---------- slots ---------- */
+.slot{display:grid;grid-template-columns:168px 1fr auto;gap:14px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.slot:last-child{border-bottom:0}
+.slot.mine{background:var(--accent-soft)}
+.slot .when{min-width:0}
+.slot .when .big{font-family:var(--display);font-weight:600;font-size:15px;font-variant-numeric:tabular-nums}
+.slot .when .alt{font-size:12px;color:var(--fg-muted);font-variant-numeric:tabular-nums}
+.slot .mid{min-width:0;display:flex;flex-direction:column;gap:3px}
+.slot .acts{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end}
+@media (max-width:700px){
+  .slot{grid-template-columns:minmax(0,1fr);gap:8px}
+  .slot .acts{justify-content:flex-start}
+}
+.zone{display:inline-flex;gap:5px;align-items:baseline}
+.zone .tag{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-faint);font-family:var(--display)}
+
+/* ---------- lists ---------- */
+.list{display:flex;flex-direction:column}
+.list .it{display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line)}
+.list .it:last-child{border-bottom:0}
+.list .it.click{cursor:pointer}
+.list .it.click:hover{background:var(--surface-2)}
+.it .grow{flex:1;min-width:0}
+.it .nm{font-weight:600;font-size:14px}
+.trunc{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ---------- stats ---------- */
+.stat{background:var(--surface-2);border-radius:9px;padding:12px 14px;border:1px solid var(--line)}
+.stat .v{font-family:var(--display);font-size:24px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat .k{font-size:11.5px;color:var(--fg-muted);margin-top:2px}
+.bar{height:6px;border-radius:99px;background:var(--surface-2);overflow:hidden;border:1px solid var(--line)}
+.bar i{display:block;height:100%;background:var(--accent)}
+
+/* ---------- chat ---------- */
+.chat{display:flex;flex-direction:column;gap:12px;padding:16px;max-height:440px;overflow-y:auto}
+.msg{max-width:min(78%,480px);display:flex;flex-direction:column;gap:3px}
+.msg .bub{padding:9px 12px;border-radius:12px;font-size:14px;border:1px solid var(--line);background:var(--surface-2)}
+.msg .meta{font-size:11px;color:var(--fg-faint)}
+.msg.them{align-self:flex-start}
+.msg.me{align-self:flex-end;align-items:flex-end}
+.msg.me .bub{background:var(--accent);border-color:var(--accent);color:#fff}
+.attach{display:flex;align-items:center;gap:8px;margin-top:6px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--surface);font-size:12.5px}
+.msg.me .attach{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.3);color:#fff}
+.composer{display:flex;gap:8px;align-items:flex-end;padding:12px 16px;border-top:1px solid var(--line)}
+
+/* ---------- misc ---------- */
+.note{display:flex;gap:9px;padding:11px 13px;border-radius:9px;font-size:13px;line-height:1.45}
+.note.info{background:var(--info-soft);color:var(--info)}
+.note.warn{background:var(--warn-soft);color:var(--warn)}
+.note.accent{background:var(--accent-soft);color:var(--accent)}
+.note b{font-weight:600}
+table.mx{width:100%;border-collapse:collapse;font-size:13px}
+table.mx th,table.mx td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+table.mx th{font-family:var(--display);font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--fg-faint);font-weight:600}
+table.mx td.c{text-align:center}
+.scrollx{overflow-x:auto}
+.check{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.check input{margin-top:3px;accent-color:var(--accent);width:15px;height:15px;flex:none}
+.steps{display:grid;gap:10px;counter-reset:s}
+.step{display:grid;grid-template-columns:24px 1fr;gap:11px;align-items:start}
+.step .n{width:24px;height:24px;border-radius:50%;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-family:var(--display);font-weight:700;font-size:12px}
+/* ---------- week grid ---------- */
+.weeknav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.weeknav .lbl{font-family:var(--display);font-weight:600;font-size:14px;font-variant-numeric:tabular-nums}
+.week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--line);border-top:1px solid var(--line)}
+.day{background:var(--surface);padding:10px 7px;display:flex;flex-direction:column;gap:7px;min-height:124px}
+.day.off{background:var(--surface-2)}
+.day .dh{text-align:center}
+.day .dh .dw{font-family:var(--display);font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--fg-faint)}
+.day .dh .dd{font-family:var(--display);font-size:17px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.15}
+.day .slots{display:flex;flex-direction:column;gap:6px}
+.day .none{font-size:11px;color:var(--fg-faint);text-align:center;margin-top:4px}
+.chip{display:block;width:100%;text-align:left;border:1px solid var(--line);border-radius:8px;padding:7px 8px;background:var(--surface-2);font-size:12.5px;line-height:1.3;cursor:default}
+.chip .t{font-weight:600;font-variant-numeric:tabular-nums;display:block}
+.chip .s{font-size:10.5px;color:var(--fg-muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chip.free{background:var(--good-soft);border-color:transparent;color:var(--good);cursor:pointer;transition:background .12s,color .12s}
+.chip.free .s{color:var(--good);opacity:.8}
+.chip.free:hover,.chip.free:focus-visible{background:var(--good);color:#fff}
+.chip.free:hover .s,.chip.free:focus-visible .s{color:#fff;opacity:.85}
+.chip.mine{background:var(--accent);border-color:var(--accent);color:#fff;cursor:pointer}
+.chip.mine .s{color:#fff;opacity:.85}
+.chip.past{opacity:.5}
+@media (max-width:760px){
+  .week{grid-template-columns:minmax(0,1fr)}
+  .day{min-height:0;flex-direction:row;align-items:center;gap:12px;padding:10px 14px}
+  .day.off{display:none}
+  .day .dh{display:flex;gap:7px;align-items:baseline;width:72px;flex:none;text-align:left}
+  .day .dh .dd{font-size:15px}
+  .day .slots{flex:1;flex-direction:row;flex-wrap:wrap;min-width:0}
+  .chip{width:auto;flex:1 1 140px}
+}
+/* ---------- modal ---------- */
+.scrim{position:fixed;inset:0;background:rgba(12,9,9,.5);display:grid;place-items:center;padding:20px;z-index:50}
+.modal{background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 24px 60px rgba(0,0,0,.3);max-width:410px;width:100%;overflow:hidden}
+.modal .mb{padding:20px}
+.modal .big{font-family:var(--display);font-size:23px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.2;margin-top:8px}
+.modal .ft{display:flex;gap:8px;justify-content:flex-end;padding:13px 20px;border-top:1px solid var(--line);background:var(--surface-2)}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:9px 16px;border-radius:999px;font-size:13px;font-weight:500;box-shadow:var(--shadow);z-index:60;transition:opacity .2s, transform .2s;pointer-events:none}
+#toast[hidden]{display:none!important}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div class="demo"><div class="demo-in wrap">
+  <b>Prototype</b>
+  <div class="roles" role="group" aria-label="Switch role">
+    <button data-act="role" data-v="admin">Winning Minds</button>
+    <button data-act="role" data-v="player">Player · Emma</button>
+    <button data-act="role" data-v="coach">Coach</button>
+  </div>
+  <div class="clock"><span id="clk-cz"></span><span id="clk-us"></span><span id="clk-gap"></span></div>
+</div></div>
+
+<header class="top"><div class="top-in wrap">
+  <div class="mark">
+    <div class="dot">W</div>
+    <div><h1>Session Hub</h1><span>Winning Minds × Wisconsin Badgers Tennis</span></div>
+  </div>
+  <div class="whoami"><span id="who-name" class="trunc"></span><div class="avatar" id="who-av"></div></div>
+</div></header>
+
+<div class="shell wrap">
+  <nav class="rail" id="rail"></nav>
+  <main id="main"></main>
+</div>
+<div id="toast" hidden></div>
+
+<script>
+/* ============================= time ============================= */
+const TZ_CZ = 'Europe/Prague', TZ_US = 'America/Chicago';
+
+function offsetMin(date, tz){
+  const p = {};
+  for (const part of new Intl.DateTimeFormat('en-GB',{timeZone:tz,hourCycle:'h23',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'}).formatToParts(date)) p[part.type]=part.value;
+  const asUTC = Date.UTC(+p.year, +p.month-1, +p.day, +p.hour, +p.minute, +p.second);
+  return Math.round((asUTC - date.getTime())/60000);
+}
+/* wall-clock time in a zone -> real instant */
+function zonedToUTC(y,m,d,hh,mi,tz){
+  let ts = Date.UTC(y,m-1,d,hh,mi);
+  for (let i=0;i<2;i++) ts = Date.UTC(y,m-1,d,hh,mi) - offsetMin(new Date(ts),tz)*60000;
+  return new Date(ts).toISOString();
+}
+function gapHours(iso){ const d=new Date(iso); return (offsetMin(d,TZ_CZ)-offsetMin(d,TZ_US))/60; }
+const f = (iso,tz,o)=>new Intl.DateTimeFormat('en-US',{timeZone:tz,...o}).format(new Date(iso));
+const czTime = iso => f(iso,TZ_CZ,{hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+const usTime = iso => f(iso,TZ_US,{hour:'numeric',minute:'2-digit',hour12:true});
+const czDay  = iso => f(iso,TZ_CZ,{weekday:'short',day:'numeric',month:'short'});
+const usDay  = iso => f(iso,TZ_US,{weekday:'short',day:'numeric',month:'short'});
+const endOf  = (iso,min)=>new Date(new Date(iso).getTime()+min*60000).toISOString();
+
+/* calendar-date helpers, used to lay a week out in the viewer's own zone */
+function ymd(iso,tz){
+  const p={}; for(const x of new Intl.DateTimeFormat('en-GB',{timeZone:tz,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(iso))) p[x.type]=x.value;
+  return {y:+p.year,m:+p.month,d:+p.day};
+}
+const addDays=(o,n)=>{const t=new Date(Date.UTC(o.y,o.m-1,o.d+n));return{y:t.getUTCFullYear(),m:t.getUTCMonth()+1,d:t.getUTCDate()}};
+const mondayOf=o=>addDays(o,-((new Date(Date.UTC(o.y,o.m-1,o.d)).getUTCDay()+6)%7));
+const dayKey=o=>`${o.y}-${String(o.m).padStart(2,'0')}-${String(o.d).padStart(2,'0')}`;
+const dayStart=(o,tz)=>+new Date(zonedToUTC(o.y,o.m,o.d,0,0,tz));
+const calFmt=(o,opt)=>new Intl.DateTimeFormat('en-US',{timeZone:'UTC',...opt}).format(new Date(Date.UTC(o.y,o.m-1,o.d)));
+
+/* ============================= sample data ============================= */
+/* Roster below is placeholder data for the prototype, not real athletes. */
+const ME = {admin:'u_mi', player:'p1', coach:'c1'};
+
+const people = [
+  {id:'u_mi', role:'admin',  first:'Michal', last:'Cipro',     email:'michal@winningminds.cz', status:'active'},
+  {id:'u_ml', role:'admin',  first:'Milan',  last:'Dvořák',    email:'milan@winningminds.cz',  status:'active'},
+  {id:'c1',   role:'coach',  first:'Dana',   last:'Reiss',     email:'d.reiss@badgers.example',status:'active', title:'Head coach'},
+  {id:'p1',   role:'player', first:'Emma',   last:'Kowalski',  email:'ekowalski@wisc.example', status:'active', year:'Jr'},
+  {id:'p2',   role:'player', first:'Sofia',  last:'Marín',     email:'smarin@wisc.example',    status:'active', year:'So'},
+  {id:'p3',   role:'player', first:'Lucia',  last:'Vrba',      email:'lvrba@wisc.example',     status:'active', year:'Sr'},
+  {id:'p4',   role:'player', first:'Nora',   last:'Hensley',   email:'nhensley@wisc.example',  status:'active', year:'Fr'},
+  {id:'p5',   role:'player', first:'Ava',    last:'Trent',     email:'atrent@wisc.example',    status:'active', year:'So'},
+  {id:'p6',   role:'player', first:'Maya',   last:'Lindqvist', email:'mlind@wisc.example',     status:'active', year:'Jr'},
+  {id:'p7',   role:'player', first:'Ines',   last:'Barros',    email:'ibarros@wisc.example',   status:'pending', year:'Fr', signedUp:'2026-10-16'},
+  {id:'c2',   role:'coach',  first:'Tom',    last:'Reyes',     email:'t.reyes@badgers.example',status:'pending', title:'Assistant coach', signedUp:'2026-10-17'},
+];
+const P = id => people.find(x=>x.id===id);
+const full  = id => { const p=P(id); return p ? p.first+' '+p.last : '—'; };
+const short = id => { const p=P(id); return p ? p.first+' '+p.last[0]+'.' : '—'; };
+const inits = id => { const p=P(id); return p ? (p.first[0]+p.last[0]) : '??'; };
+const roster = () => people.filter(p=>p.role==='player' && p.status==='active');
+
+const cycles = [
+  {id:'c06', n:'06', status:'done',  note:'Completed'},
+  {id:'c07', n:'07', status:'open',  note:'Booking open'},
+  {id:'c08', n:'08', status:'draft', note:'Draft — not visible to players'},
+];
+const MEET = 'https://meet.google.com/';
+let slotSeq = 0;
+function slot(cycle, y,m,d, hh,mi, dur, meet, who, attended){
+  return {id:'s'+(++slotSeq), cycle, at:zonedToUTC(y,m,d,hh,mi,TZ_CZ), dur, meet:meet||'', who:who||null, attended:!!attended};
+}
+const slots = [
+  /* Cycle 06 — done */
+  slot('c06',2026,10,14,15,0,45,MEET+'kfa-rdjo-xpq','p2',true),
+  slot('c06',2026,10,14,16,0,45,MEET+'kfa-rdjo-xpq','p1',true),
+  slot('c06',2026,10,14,17,0,45,MEET+'kfa-rdjo-xpq','p4',true),
+  slot('c06',2026,10,15,15,0,45,MEET+'mzu-btco-wnh','p3',true),
+  slot('c06',2026,10,15,16,0,45,MEET+'mzu-btco-wnh','p5',false),
+  slot('c06',2026,10,15,17,0,45,MEET+'mzu-btco-wnh','p6',true),
+  /* Cycle 07 — booking open */
+  slot('c07',2026,10,28,15,0,45,MEET+'qrb-vnsd-ktm',null),
+  slot('c07',2026,10,28,16,0,45,MEET+'qrb-vnsd-ktm','p2'),
+  slot('c07',2026,10,28,17,0,45,MEET+'qrb-vnsd-ktm','p3'),
+  slot('c07',2026,10,28,18,0,45,MEET+'qrb-vnsd-ktm','p4'),
+  slot('c07',2026,10,28,19,0,45,'',null),
+  slot('c07',2026,10,29,15,0,45,MEET+'hpv-zxlt-dre','p5'),
+  slot('c07',2026,10,29,16,0,45,MEET+'hpv-zxlt-dre',null),
+  slot('c07',2026,10,29,17,0,45,MEET+'hpv-zxlt-dre','p6'),
+  slot('c07',2026,10,29,18,0,45,MEET+'hpv-zxlt-dre',null),
+  /* Cycle 08 — draft */
+  slot('c08',2026,11,11,16,0,45,'',null),
+  slot('c08',2026,11,11,17,0,45,'',null),
+  slot('c08',2026,11,12,16,0,45,'',null),
+  slot('c08',2026,11,12,17,0,45,'',null),
+];
+
+const files = [
+  {id:'f1', name:'Breathing protocol — 4/6.pdf',        size:'248 KB', by:'u_mi', at:'2026-09-30', to:'all'},
+  {id:'f2', name:'Pre-match routine worksheet.pdf',     size:'112 KB', by:'u_ml', at:'2026-10-14', to:'all'},
+  {id:'f3', name:'Emma — session 06 summary.pdf',       size:'86 KB',  by:'u_mi', at:'2026-10-14', to:'p1'},
+  {id:'f4', name:'Refocus cue cards.pdf',               size:'1.2 MB', by:'u_mi', at:'2026-10-02', to:'all'},
+];
+const tasks = [
+  {id:'t1', who:'p1', title:'Journal 3 pressure moments from last match', due:'2026-10-24', done:false, by:'u_mi'},
+  {id:'t2', who:'p1', title:'Run the 4/6 breathing drill before every practice serve set', due:'2026-10-27', done:false, by:'u_mi'},
+  {id:'t3', who:'p1', title:'Fill in the pre-match routine worksheet', due:'2026-10-17', done:true,  by:'u_ml'},
+  {id:'t4', who:'p2', title:'Journal 3 pressure moments from last match', due:'2026-10-24', done:false, by:'u_mi'},
+  {id:'t5', who:'p4', title:'Watch the refocus cue video, note 2 takeaways', due:'2026-10-22', done:false, by:'u_mi'},
+];
+const notes = [
+  {id:'n1', who:'p1', at:'2026-10-14', by:'u_mi', text:'Serve routine falls apart at 30–40. Agreed on a fixed 3-bounce reset. Revisit next call.'},
+  {id:'n2', who:'p1', at:'2026-09-30', by:'u_mi', text:'First call. Very open. Main theme: fear of letting the team down in dual matches.'},
+];
+const threads = [
+  {who:'p1', msgs:[
+    {from:'u_mi', at:'2026-10-14T18:10:00Z', text:'Great call today, Emma. Summary and the worksheet are attached.', file:'f3'},
+    {from:'p1',   at:'2026-10-15T01:22:00Z', text:'Thank you! The 3-bounce reset already felt different in practice this morning.'},
+    {from:'u_mi', at:'2026-10-15T07:40:00Z', text:'That is exactly what we want. Keep the journal going and book your Cycle 07 slot when you can.'},
+    {from:'p1',   at:'2026-10-17T22:05:00Z', text:'Will do. Tuesdays are hard this time, is a later slot possible?'},
+  ]},
+  {who:'p2', msgs:[
+    {from:'p2',   at:'2026-10-16T16:30:00Z', text:'Booked Wednesday 10 am. See you then!'},
+  ]},
+  {who:'p4', msgs:[
+    {from:'u_ml', at:'2026-10-13T09:00:00Z', text:'Nora, welcome. Your first call is Oct 14, 11 am your time.'},
+    {from:'p4',   at:'2026-10-13T14:12:00Z', text:'Got it, thanks!'},
+  ]},
+  {who:'c1', msgs:[
+    {from:'c1',   at:'2026-10-16T19:00:00Z', text:'Can we add two more slots on the 29th? Three girls have labs on Wednesday.'},
+    {from:'u_mi', at:'2026-10-17T06:15:00Z', text:'Yes — adding them to Cycle 08 as well so it is permanent.'},
+  ]},
+];
+const thread = who => threads.find(t=>t.who===who) || (threads.push({who,msgs:[]}), threads[threads.length-1]);
+
+/* ============================= state ============================= */
+const state = {role:'admin', view:'today', cycle:'c07', open:null, chat:'p1', week:null, confirm:null};
+const VIEWS = {
+  admin:[['today','Today','◎'],['schedule','Schedule','▦'],['people','Players','⚇'],['messages','Messages','✉'],['library','Library','⛁'],['setup','Setup','⚙']],
+  player:[['home','My session','◎'],['messages','Messages','✉'],['tasks','Tasks','✓'],['library','Resources','⛁']],
+  coach:[['team','Team','⚇'],['messages','Messages','✉']],
+};
+const pendingCount = () => people.filter(p=>p.status==='pending').length;
+
+function toast(msg){
+  const t=document.getElementById('toast'); t.textContent=msg; t.hidden=false;
+  clearTimeout(t._t); t._t=setTimeout(()=>{t.hidden=true},2400);
+}
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ============================= clocks ============================= */
+function clocks(){
+  const now = new Date().toISOString();
+  document.getElementById('clk-cz').textContent = 'Prague '+czTime(now);
+  document.getElementById('clk-us').textContent = 'Madison '+usTime(now);
+  document.getElementById('clk-gap').textContent = gapHours(now)+'h apart';
+}
+
+/* ============================= shared bits ============================= */
+function dual(iso, lead){ /* lead: 'cz' | 'us' */
+  const a = lead==='cz' ? {d:czDay(iso), t:czTime(iso), tag:'Prague'} : {d:usDay(iso), t:usTime(iso), tag:'Madison'};
+  const b = lead==='cz' ? {t:usTime(iso), tag:'Madison'} : {t:czTime(iso), tag:'Prague'};
+  return `<div class="when">
+    <div class="big">${a.d} · ${a.t}</div>
+    <div class="alt"><span class="zone"><span class="tag">${b.tag}</span>${b.t}</span> <span class="faint">· ${a.tag} time above</span></div>
+  </div>`;
+}
+function gapBanner(cyc){
+  const s = slots.filter(x=>x.cycle===cyc)[0]; if(!s) return '';
+  const g = gapHours(s.at);
+  if (g===7) return '';
+  return `<div class="note warn"><span>⚠</span><div><b>Clock gap is ${g} hours this cycle, not the usual 7.</b> The EU set clocks back on Oct 25, the US does it on Nov 1. Every time below is already converted — never re-count by hand during these two weeks.</div></div>`;
+}
+function cycleTabs(){
+  return `<div class="row">`+cycles.map(c=>{
+    const st = c.status==='open'?'booked':c.status==='draft'?'warn':'done';
+    return `<button class="btn sm ${state.cycle===c.id?'primary':''}" data-act="cycle" data-v="${c.id}">Cycle ${c.n} <span class="pill ${state.cycle===c.id?'':st}" style="${state.cycle===c.id?'background:rgba(255,255,255,.2);color:#fff':''}">${c.note.split(' —')[0]}</span></button>`;
+  }).join('')+`</div>`;
+}
+const cycSlots = id => slots.filter(s=>s.cycle===id).sort((a,b)=>a.at<b.at?-1:1);
+
+/* ============================= ADMIN ============================= */
+function vToday(){
+  const open = cycSlots('c07');
+  const booked = open.filter(s=>s.who).length;
+  const noLink = open.filter(s=>!s.meet).length;
+  const notBooked = roster().filter(p=>!open.some(s=>s.who===p.id));
+  const pend = people.filter(p=>p.status==='pending');
+  const unread = threads.filter(t=>t.msgs.length && t.msgs[t.msgs.length-1].from===t.who);
+  const overdue = tasks.filter(t=>!t.done && t.due < '2026-10-18');
+
+  return `
+  <div class="page-h"><h2>Today</h2><p>Saturday, 18 October 2026</p></div>
+
+  <div class="grid3">
+    <div class="stat"><div class="v">${booked}/${open.length}</div><div class="k">Cycle 07 slots booked</div>
+      <div class="bar" style="margin-top:8px"><i style="width:${Math.round(booked/open.length*100)}%"></i></div></div>
+    <div class="stat"><div class="v">${pend.length}</div><div class="k">Accounts awaiting approval</div></div>
+    <div class="stat"><div class="v">${unread.length}</div><div class="k">Threads waiting on a reply</div></div>
+    <div class="stat"><div class="v">${overdue.length}</div><div class="k">Overdue player tasks</div></div>
+  </div>
+
+  ${pend.length?`<div class="card"><div class="hd"><h2>Approve access</h2><span class="sub">They signed up with an email and password. Nothing is visible to them until you approve.</span></div>
+  <div class="list">${pend.map(p=>`
+    <div class="it">
+      <div class="avatar">${inits(p.id)}</div>
+      <div class="grow"><div class="nm">${esc(p.first+' '+p.last)}</div>
+        <div class="xs muted trunc">${esc(p.email)} · signed up ${esc(p.signedUp)}</div></div>
+      <select data-act="setrole" data-v="${p.id}" style="width:auto">
+        <option value="player" ${p.role==='player'?'selected':''}>Player</option>
+        <option value="coach" ${p.role==='coach'?'selected':''}>Coach</option>
+        <option value="admin" ${p.role==='admin'?'selected':''}>Winning Minds</option>
+      </select>
+      <button class="btn sm primary" data-act="approve" data-v="${p.id}">Approve</button>
+      <button class="btn sm ghost" data-act="decline" data-v="${p.id}">Decline</button>
+    </div>`).join('')}</div></div>`:''}
+
+  <div class="grid2">
+    <div class="card"><div class="hd"><h2>Needs your attention</h2></div><div class="list">
+      ${noLink?`<div class="it"><span class="pill warn">Meet link</span><div class="grow sm">${noLink} slot${noLink>1?'s':''} in Cycle 07 ${noLink>1?'have':'has'} no Google Meet link</div><button class="btn sm" data-act="go" data-v="schedule">Fix</button></div>`:''}
+      ${notBooked.length?`<div class="it"><span class="pill info">Booking</span><div class="grow sm">${notBooked.map(p=>esc(p.first)).join(', ')} ${notBooked.length>1?'have':'has'} not booked Cycle 07</div><button class="btn sm" data-act="nudge">Send reminder</button></div>`:''}
+      ${overdue.map(t=>`<div class="it"><span class="pill accent">Task</span><div class="grow sm trunc">${esc(short(t.who))} — ${esc(t.title)} (due ${esc(t.due)})</div></div>`).join('')}
+      ${unread.map(t=>`<div class="it click" data-act="chat" data-v="${t.who}"><span class="pill booked">Reply</span><div class="grow sm trunc">${esc(short(t.who))}: "${esc(t.msgs[t.msgs.length-1].text)}"</div></div>`).join('')}
+    </div></div>
+
+    <div class="card"><div class="hd"><h2>Next calls</h2><span class="sub">Cycle 07 · Oct 28–29</span></div>
+      <div class="list">${open.filter(s=>s.who).slice(0,4).map(s=>`
+        <div class="it"><div class="avatar">${inits(s.who)}</div>
+          <div class="grow"><div class="nm">${esc(full(s.who))}</div>
+            <div class="xs muted num">${czDay(s.at)} · ${czTime(s.at)} Prague · ${usTime(s.at)} Madison</div></div>
+          ${s.meet?`<span class="pill booked">Link ok</span>`:`<span class="pill warn">No link</span>`}
+        </div>`).join('')}
+      </div>
+      <div class="bd" style="border-top:1px solid var(--line)"><button class="btn" data-act="go" data-v="schedule">Open schedule</button></div>
+    </div>
+  </div>`;
+}
+
+function vSchedule(){
+  const cyc = cycles.find(c=>c.id===state.cycle);
+  const ss = cycSlots(state.cycle);
+  const booked = ss.filter(s=>s.who).length;
+  return `
+  <div class="page-h"><h2>Schedule</h2><p>You create the slots in Prague time. Players always see their own.</p></div>
+  ${cycleTabs()}
+  ${gapBanner(state.cycle)}
+
+  <div class="card">
+    <div class="hd">
+      <h2>Cycle ${cyc.n}</h2>
+      <span class="pill ${cyc.status==='open'?'booked':cyc.status==='draft'?'warn':'done'}">${esc(cyc.note)}</span>
+      <span class="sub num">${booked}/${ss.length} booked</span>
+      <div style="margin-left:auto" class="row">
+        ${cyc.status==='draft'?`<button class="btn sm primary" data-act="publish" data-v="${cyc.id}">Open booking to players</button>`:''}
+        ${cyc.status==='open'?`<button class="btn sm" data-act="nudge">Remind unbooked</button>`:''}
+      </div>
+    </div>
+    <div class="bd tight">${ss.map(s=>`
+      <div class="slot">
+        ${dual(s.at,'cz')}
+        <div class="mid">
+          <div class="row" style="gap:7px">
+            ${s.who?`<span class="pill booked">${esc(full(s.who))}</span>`:`<span class="pill open">Open</span>`}
+            <span class="xs muted num">${s.dur} min · ends ${czTime(endOf(s.at,s.dur))} Prague</span>
+            ${s.cycle==='c06'?(s.attended?`<span class="pill done">Attended</span>`:`<span class="pill warn">No-show</span>`):''}
+          </div>
+          <div class="row" style="gap:6px">
+            ${s.meet
+              ? `<span class="xs muted trunc" style="max-width:260px">${esc(s.meet)}</span><button class="btn sm ghost" data-act="copy" data-v="${s.id}">Copy</button>`
+              : `<input type="text" placeholder="Paste Google Meet link…" data-link="${s.id}" style="max-width:280px"><button class="btn sm" data-act="savelink" data-v="${s.id}">Save</button>`}
+          </div>
+        </div>
+        <div class="acts">
+          ${s.who?`<button class="btn sm" data-act="chat" data-v="${s.who}">Message</button>
+                   <button class="btn sm ghost" data-act="release" data-v="${s.id}">Release</button>`
+                 :`<button class="btn sm ghost" data-act="delslot" data-v="${s.id}">Delete</button>`}
+        </div>
+      </div>`).join('') || `<div class="bd muted sm">No slots yet.</div>`}
+    </div>
+  </div>
+
+  <div class="card"><div class="hd"><h2>Add a slot</h2><span class="sub">Entered in Prague time — the Madison time is computed for you</span></div>
+  <div class="bd">
+    <div class="row" style="align-items:flex-end;gap:12px">
+      <label class="fld" style="flex:1 1 150px">Date<input type="date" id="ns-date" value="2026-11-11"></label>
+      <label class="fld" style="flex:0 1 120px">Time (Prague)<input type="time" id="ns-time" value="18:00" step="900"></label>
+      <label class="fld" style="flex:0 1 110px">Minutes<input type="number" id="ns-dur" value="45" min="15" max="120" step="5"></label>
+      <label class="fld" style="flex:1 1 200px">Google Meet link<input type="text" id="ns-meet" placeholder="optional, can be added later"></label>
+      <button class="btn primary" data-act="addslot">Add to Cycle ${cyc.n}</button>
+    </div>
+    <div class="note info" style="margin-top:12px"><span>⟳</span><div id="ns-preview">—</div></div>
+  </div></div>`;
+}
+
+function vPeople(){
+  if (state.open) return vPlayer(state.open);
+  const list = people.filter(p=>p.role!=='admin');
+  const c7 = cycSlots('c07');
+  return `
+  <div class="page-h"><h2>Players &amp; staff</h2><p>Sample roster for the prototype.</p></div>
+  <div class="card"><div class="bd tight"><div class="list">
+    ${list.map(p=>{
+      const s = c7.find(x=>x.who===p.id);
+      const t = tasks.filter(t=>t.who===p.id && !t.done).length;
+      const th = threads.find(t=>t.who===p.id);
+      return `<div class="it ${p.status==='active'?'click':''}" ${p.status==='active'?`data-act="openp" data-v="${p.id}"`:''}>
+        <div class="avatar">${inits(p.id)}</div>
+        <div class="grow"><div class="nm">${esc(p.first+' '+p.last)} ${p.role==='coach'?`<span class="pill info">${esc(p.title)}</span>`:`<span class="xs faint">${esc(p.year||'')}</span>`}</div>
+          <div class="xs muted trunc">${esc(p.email)}</div></div>
+        ${p.status==='pending'
+          ? `<span class="pill warn">Awaiting approval</span><button class="btn sm primary" data-act="approve" data-v="${p.id}">Approve</button>`
+          : `<div class="xs muted num" style="text-align:right">
+               ${p.role==='player' ? (s?`Cycle 07 · ${usDay(s.at)} ${usTime(s.at)}`:`<span class="pill open">Not booked</span>`) : 'Staff account'}
+             </div>
+             ${t?`<span class="pill accent num">${t} task${t>1?'s':''}</span>`:''}
+             ${th&&th.msgs.length&&th.msgs[th.msgs.length-1].from===p.id?`<span class="pill booked">New</span>`:''}`}
+      </div>`;
+    }).join('')}
+  </div></div></div>`;
+}
+
+function vPlayer(id){
+  const p = P(id);
+  const hist = slots.filter(s=>s.who===id).sort((a,b)=>a.at<b.at?-1:1);
+  const ts = tasks.filter(t=>t.who===id);
+  const ns = notes.filter(n=>n.who===id);
+  const fs = files.filter(x=>x.to==='all'||x.to===id);
+  return `
+  <div class="row"><button class="btn sm ghost" data-act="closep">← All players</button></div>
+  <div class="page-h"><h2>${esc(p.first+' '+p.last)}</h2><p>${esc(p.email)} · ${esc(p.year||p.title||'')}</p></div>
+
+  <div class="grid2">
+    <div class="card"><div class="hd"><h2>Private notes</h2><span class="sub">Winning Minds only — never visible to players or coaches</span></div>
+      <div class="bd" style="display:flex;flex-direction:column;gap:12px">
+        ${ns.map(n=>`<div><div class="xs faint num">${esc(n.at)} · ${esc(P(n.by).first)}</div><div class="sm">${esc(n.text)}</div></div>`).join('')||'<p class="sm muted">No notes yet.</p>'}
+        <div class="row" style="align-items:flex-end">
+          <textarea id="np-note" rows="2" placeholder="Add a note after the call…"></textarea>
+          <button class="btn primary" data-act="addnote" data-v="${id}">Save</button>
+        </div>
+      </div></div>
+
+    <div class="card"><div class="hd"><h2>Tasks</h2><span class="sub">Visible to ${esc(p.first)}</span></div>
+      <div class="bd" style="display:flex;flex-direction:column;gap:10px">
+        ${ts.map(t=>`<label class="check"><input type="checkbox" ${t.done?'checked':''} data-act="task" data-v="${t.id}">
+          <span class="sm" style="${t.done?'text-decoration:line-through;color:var(--fg-faint)':''}">${esc(t.title)}
+          <span class="xs ${!t.done&&t.due<'2026-10-18'?'':'faint'}" style="${!t.done&&t.due<'2026-10-18'?'color:var(--accent);font-weight:600':''}"> · due ${esc(t.due)}</span></span></label>`).join('')||'<p class="sm muted">No tasks.</p>'}
+        <div class="row" style="align-items:flex-end">
+          <input type="text" id="np-task" placeholder="New task…">
+          <input type="date" id="np-due" value="2026-10-30" style="width:auto">
+          <button class="btn primary" data-act="addtask" data-v="${id}">Assign</button>
+        </div>
+      </div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="card"><div class="hd"><h2>Session history</h2></div><div class="list">
+      ${hist.map(s=>`<div class="it"><div class="grow"><div class="nm num">${czDay(s.at)} · ${czTime(s.at)} Prague</div>
+        <div class="xs muted num">${usTime(s.at)} Madison · ${s.dur} min</div></div>
+        ${s.cycle==='c06'?(s.attended?`<span class="pill booked">Attended</span>`:`<span class="pill warn">No-show</span>`):`<span class="pill info">Upcoming</span>`}</div>`).join('')
+        ||'<div class="bd sm muted">No sessions yet.</div>'}
+    </div></div>
+
+    <div class="card"><div class="hd"><h2>Shared files</h2></div><div class="list">
+      ${fs.map(x=>`<div class="it"><span class="pill ${x.to==='all'?'open':'accent'}">${x.to==='all'?'Team':'Private'}</span>
+        <div class="grow"><div class="sm trunc">${esc(x.name)}</div><div class="xs muted">${esc(x.size)} · ${esc(x.at)}</div></div></div>`).join('')}
+    </div></div>
+  </div>
+
+  <div class="card"><div class="hd"><h2>Conversation</h2><span class="sub">Direct, 1-to-1</span></div>${chatBlock(id,'wm')}</div>`;
+}
+
+function vLibrary(){
+  const admin = state.role==='admin';
+  const visible = admin ? files : files.filter(x=>x.to==='all'||x.to===ME[state.role]);
+  return `
+  <div class="page-h"><h2>${admin?'Library':'Resources'}</h2><p>${admin?'Share with the whole team or one player.':'Everything Winning Minds has shared with you.'}</p></div>
+  <div class="card"><div class="bd tight"><div class="list">
+    ${visible.map(x=>`<div class="it">
+      <span class="pill ${x.to==='all'?'open':'accent'}">${x.to==='all'?'Team':admin?esc(short(x.to)):'For you'}</span>
+      <div class="grow"><div class="nm trunc">${esc(x.name)}</div>
+        <div class="xs muted">${esc(x.size)} · uploaded ${esc(x.at)}${admin?' by '+esc(P(x.by).first):''}</div></div>
+      <button class="btn sm ghost" data-act="dl">Open</button>
+    </div>`).join('')}
+  </div></div></div>
+  ${admin?`<div class="card"><div class="hd"><h2>Upload</h2></div><div class="bd">
+    <div class="row" style="align-items:flex-end">
+      <label class="fld" style="flex:1 1 220px">File name<input type="text" id="up-name" placeholder="e.g. Match-day checklist.pdf"></label>
+      <label class="fld" style="flex:0 1 180px">Share with
+        <select id="up-to"><option value="all">Whole team</option>${roster().map(p=>`<option value="${p.id}">${esc(full(p.id))}</option>`).join('')}</select></label>
+      <button class="btn primary" data-act="upload">Add file</button>
+    </div>
+    <p class="xs muted" style="margin-top:8px">In the real app this is a drag-and-drop upload (PDF, video, audio, images).</p>
+  </div></div>`:''}`;
+}
+
+function vSetup(){
+  const rows = [
+    ['Create cycles &amp; slots','●','','',''],
+    ['Book a slot','●','●','',''],
+    ['See who booked (name only)','●','●','●',''],
+    ['Google Meet link for own call','●','●','',''],
+    ['1-to-1 messages with Winning Minds','●','●','●',''],
+    ['See another player\'s messages','','','',''],
+    ['Private session notes','●','','',''],
+    ['Assign tasks &amp; files','●','','',''],
+    ['Team-level attendance summary','●','','●',''],
+    ['Approve new accounts','●','','',''],
+  ];
+  return `
+  <div class="page-h"><h2>Setup</h2><p>How access, links and time zones are meant to work.</p></div>
+
+  <div class="card"><div class="hd"><h2>How someone gets in</h2></div><div class="bd"><div class="steps">
+    <div class="step"><div class="n">1</div><div class="sm">They open the link, enter their email and choose a password. No invite code needed.</div></div>
+    <div class="step"><div class="n">2</div><div class="sm">The account lands in <b>Awaiting approval</b>. They see a holding screen and nothing else.</div></div>
+    <div class="step"><div class="n">3</div><div class="sm">You or Milan approve it and set the role — Player, Coach, or Winning Minds.</div></div>
+    <div class="step"><div class="n">4</div><div class="sm">They get an email and can book, message, and open whatever is shared with them.</div></div>
+  </div>
+  <div class="note info" style="margin-top:14px"><span>i</span><div>Optional hardening: restrict sign-ups to a domain (e.g. <b>@wisc.edu</b>) so only university addresses can even reach the approval queue.</div></div>
+  </div></div>
+
+  <div class="card"><div class="hd"><h2>Who can see what</h2></div><div class="bd tight scrollx">
+    <table class="mx"><thead><tr><th>Capability</th><th class="c">Winning Minds</th><th class="c">Player</th><th class="c">Coach</th></tr></thead>
+    <tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td class="c">${r[1]||'<span class="faint">—</span>'}</td><td class="c">${r[2]||'<span class="faint">—</span>'}</td><td class="c">${r[3]||'<span class="faint">—</span>'}</td></tr>`).join('')}</tbody></table>
+  </div></div>
+
+  <div class="grid2">
+    <div class="card"><div class="hd"><h2>Google Meet links</h2></div><div class="bd" style="display:flex;flex-direction:column;gap:12px">
+      <div><div class="eyebrow">Phase 1 — now</div><p class="sm">You paste one link per day (or per slot) into the schedule. Players only ever see the link for their own call, and only inside the app.</p></div>
+      <hr class="sep">
+      <div><div class="eyebrow">Phase 2 — optional</div><p class="sm">Connect one Winning Minds Google account once. The app then creates a real Calendar event with a generated Meet link per booking, and invites the player. Roughly a day of work; it needs a Google Cloud project and OAuth consent.</p></div>
+    </div></div>
+
+    <div class="card"><div class="hd"><h2>Time zones</h2></div><div class="bd" style="display:flex;flex-direction:column;gap:10px">
+      <p class="sm">Every slot is stored as one absolute moment. Prague and Madison are only two ways of displaying it, so nothing can drift.</p>
+      <div class="row"><span class="pill info">Prague</span><span class="sm num">24-hour · CET / CEST</span></div>
+      <div class="row"><span class="pill info">Madison</span><span class="sm num">12-hour am/pm · CST / CDT</span></div>
+      <div class="note warn"><span>⚠</span><div>The gap is 7 hours for most of the year, but drops to <b>6 hours</b> twice: Mar 8–29 and <b>Oct 25 – Nov 1</b>, because the EU and US switch on different dates. The app computes it; people should not.</div></div>
+    </div></div>
+  </div>
+
+  <div class="card"><div class="hd"><h2>Next steps</h2></div><div class="bd tight"><div class="list">
+    <div class="it"><span class="pill accent">1</span><div class="grow sm">Email notifications — booking confirmation, 24h reminder, new message</div></div>
+    <div class="it"><span class="pill accent">2</span><div class="grow sm">Czech / English switch (all copy already sits in one place)</div></div>
+    <div class="it"><span class="pill accent">3</span><div class="grow sm">Add to calendar (.ics) and Google Meet auto-generation</div></div>
+    <div class="it"><span class="pill accent">4</span><div class="grow sm">Short check-in form before each call (mood, sleep, one thing to work on)</div></div>
+    <div class="it"><span class="pill accent">5</span><div class="grow sm">Attendance export for the coaching staff</div></div>
+  </div></div></div>`;
+}
+
+/* ============================= PLAYER ============================= */
+/* Draft cycles never reach a player. */
+const playerSlots = () => slots.filter(s=>{const c=cycles.find(c=>c.id===s.cycle); return c && c.status!=='draft';});
+const weekKeys = () => [...new Set(playerSlots().map(s=>dayKey(mondayOf(ymd(s.at,TZ_US)))))].sort();
+function ensureWeek(){
+  if (state.week) return;
+  const next = playerSlots().filter(s=>cycles.find(c=>c.id===s.cycle).status==='open').sort((a,b)=>a.at<b.at?-1:1)[0];
+  state.week = mondayOf(ymd(next ? next.at : new Date().toISOString(), TZ_US));
+}
+function chip(s){
+  const done = cycles.find(c=>c.id===s.cycle).status==='done';
+  const ttl = `${czTime(s.at)} in Prague`;
+  if (s.who===ME.player)
+    return `<button class="chip mine" title="${ttl}" data-act="askrelease" data-v="${s.id}"><span class="t">${usTime(s.at)}</span><span class="s">${done?'Attended':'Your slot — tap to release'}</span></button>`;
+  if (s.who)
+    return `<div class="chip taken ${done?'past':''}" title="${ttl}"><span class="t">${usTime(s.at)}</span><span class="s">${esc(short(s.who))}</span></div>`;
+  if (done)
+    return `<div class="chip past" title="${ttl}"><span class="t">${usTime(s.at)}</span><span class="s">Not used</span></div>`;
+  return `<button class="chip free" title="${ttl}" data-act="askbook" data-v="${s.id}"><span class="t">${usTime(s.at)}</span><span class="s">Free · ${s.dur} min</span></button>`;
+}
+function weekGrid(){
+  ensureWeek();
+  const mon = state.week, days = [...Array(7)].map((_,i)=>addDays(mon,i));
+  const from = dayStart(mon,TZ_US), to = dayStart(addDays(mon,7),TZ_US);
+  const inWeek = playerSlots().filter(s=>{const t=+new Date(s.at); return t>=from && t<to;}).sort((a,b)=>a.at<b.at?-1:1);
+  const free = inWeek.filter(s=>!s.who && cycles.find(c=>c.id===s.cycle).status==='open').length;
+  const cycNames = [...new Set(inWeek.map(s=>s.cycle))].map(id=>{const c=cycles.find(x=>x.id===id);return `<span class="pill ${c.status==='open'?'booked':'done'}">Cycle ${c.n}</span>`;}).join('');
+  const label = `${calFmt(mon,{month:'short',day:'numeric'})} – ${calFmt(addDays(mon,6),{month:'short',day:'numeric'})}`;
+  const keys = weekKeys(), here = dayKey(mon);
+  const prev = keys.filter(k=>k<here).pop(), next = keys.find(k=>k>here);
+
+  return `<div class="card">
+    <div class="hd">
+      <div class="weeknav">
+        <button class="btn sm" data-act="week" data-v="-1" aria-label="Previous week">←</button>
+        <span class="lbl">${label}</span>
+        <button class="btn sm" data-act="week" data-v="1" aria-label="Next week">→</button>
+      </div>
+      ${cycNames}
+      <span class="sub" style="margin-left:auto">${free?`${free} free slot${free>1?'s':''} this week`:'No free slots this week'}</span>
+    </div>
+    ${inWeek.length ? `<div class="week">${days.map(d=>{
+      const ds = dayStart(d,TZ_US), de = dayStart(addDays(d,1),TZ_US);
+      const list = inWeek.filter(s=>{const t=+new Date(s.at); return t>=ds && t<de;});
+      return `<div class="day ${list.length?'':'off'}">
+        <div class="dh"><div class="dw">${calFmt(d,{weekday:'short'})}</div><div class="dd">${d.d}</div></div>
+        ${list.length?`<div class="slots">${list.map(chip).join('')}</div>`:`<div class="none">—</div>`}
+      </div>`;
+    }).join('')}</div>` : `<div class="bd" style="text-align:center">
+        <p class="sm muted">No sessions this week.</p>
+        ${next||prev?`<button class="btn sm" style="margin-top:10px" data-act="weekjump" data-v="${next||prev}">Go to ${next?'the next':'the last'} cycle</button>`:''}
+      </div>`}
+    <div class="bd" style="border-top:1px solid var(--line)">
+      <p class="xs muted">Tap a green slot to take it — you confirm once and you are booked. Times are yours (Madison); hover a slot to see the Prague time. Teammates see only each other's names, never notes, messages, files or tasks.</p>
+    </div>
+  </div>`;
+}
+function modal(){
+  if (!state.confirm) return '';
+  const s = slots.find(x=>x.id===state.confirm.id); if (!s) return '';
+  const book = state.confirm.type==='book';
+  const cur = book ? slots.find(x=>x.cycle===s.cycle && x.who===ME.player) : null;
+  return `<div class="scrim" data-act="closem"><div class="modal" role="dialog" aria-modal="true" aria-label="${book?'Confirm booking':'Release slot'}">
+    <div class="mb">
+      <div class="eyebrow">${book?'Confirm your slot':'Release this slot?'}</div>
+      <div class="big">${usDay(s.at)} · ${usTime(s.at)}</div>
+      <p class="sm muted num" style="margin-top:5px">${s.dur} minutes · ${czTime(s.at)} in Prague</p>
+      ${book && cur ? `<div class="note warn" style="margin-top:14px"><span>⚠</span><div>This replaces your current slot on <b>${usDay(cur.at)} at ${usTime(cur.at)}</b>.</div></div>`
+        : book ? `<p class="sm muted" style="margin-top:12px">You will get an email confirmation and the Google Meet link appears here on the day.</p>`
+        : `<p class="sm muted" style="margin-top:12px">It goes back into the pool and a teammate can take it.</p>`}
+    </div>
+    <div class="ft">
+      <button class="btn" data-act="closem">Cancel</button>
+      <button class="btn primary" data-act="${book?'dobook':'dorelease'}" data-v="${s.id}">${book?'Confirm booking':'Release'}</button>
+    </div>
+  </div></div>`;
+}
+
+function vHome(){
+  const me = ME.player;
+  const c7 = cycSlots('c07');
+  const mine = c7.find(s=>s.who===me);
+  const past = slots.filter(s=>s.who===me && s.cycle==='c06');
+  const myTasks = tasks.filter(t=>t.who===me && !t.done);
+
+  return `
+  <div class="page-h"><h2>Hi, Emma</h2><p>All times shown in Madison time.</p></div>
+
+  ${mine ? `
+  <div class="card" style="border-color:var(--accent-line);background:var(--accent-soft)">
+    <div class="bd">
+      <div class="eyebrow" style="color:var(--accent)">Your next call</div>
+      <div class="spread" style="margin-top:8px;align-items:flex-start">
+        <div>
+          <div style="font-family:var(--display);font-size:26px;font-weight:700" class="num">${usDay(mine.at)} · ${usTime(mine.at)}</div>
+          <div class="sm num" style="color:var(--accent)">${mine.dur} minutes · ${czTime(mine.at)} in Prague for Michal &amp; Milan</div>
+        </div>
+        <div class="row">
+          <button class="btn primary" data-act="join" data-v="${mine.id}">Join Google Meet</button>
+          <button class="btn" data-act="askrelease" data-v="${mine.id}">Release slot</button>
+        </div>
+      </div>
+      <p class="xs" style="margin-top:10px;color:var(--accent)">The Join button opens 10 minutes before the call. You will also get an email reminder the day before.</p>
+    </div>
+  </div>` : `
+  <div class="note accent"><span>◎</span><div><b>You have not booked Cycle 07 yet.</b> Pick a time below — first come, first served.</div></div>`}
+
+  ${weekGrid()}
+
+  <div class="grid2">
+    <div class="card"><div class="hd"><h2>Open tasks</h2>${myTasks.length?`<span class="pill accent num">${myTasks.length}</span>`:''}</div>
+      <div class="bd" style="display:flex;flex-direction:column;gap:10px">
+        ${myTasks.map(t=>`<label class="check"><input type="checkbox" data-act="task" data-v="${t.id}">
+          <span class="sm">${esc(t.title)}<span class="xs ${t.due<'2026-10-18'?'':'faint'}" style="${t.due<'2026-10-18'?'color:var(--accent);font-weight:600':''}"> · due ${esc(t.due)}</span></span></label>`).join('')
+          ||'<p class="sm muted">Nothing open. Nice.</p>'}
+      </div></div>
+
+    <div class="card"><div class="hd"><h2>Past sessions</h2></div><div class="list">
+      ${past.map(s=>`<div class="it"><div class="grow"><div class="nm num">${usDay(s.at)} · ${usTime(s.at)}</div>
+        <div class="xs muted">Cycle 06 · ${s.dur} min</div></div><span class="pill done">Done</span></div>`).join('')
+        ||'<div class="bd sm muted">No sessions yet.</div>'}
+    </div></div>
+  </div>`;
+}
+
+function vTasks(){
+  const ts = tasks.filter(t=>t.who===ME.player);
+  const openT = ts.filter(t=>!t.done), doneT = ts.filter(t=>t.done);
+  return `
+  <div class="page-h"><h2>Tasks</h2><p>Set by Winning Minds between calls.</p></div>
+  <div class="card"><div class="hd"><h2>Open</h2></div><div class="bd" style="display:flex;flex-direction:column;gap:12px">
+    ${openT.map(t=>`<label class="check"><input type="checkbox" data-act="task" data-v="${t.id}">
+      <span class="sm">${esc(t.title)}<br><span class="xs ${t.due<'2026-10-18'?'':'faint'}" style="${t.due<'2026-10-18'?'color:var(--accent);font-weight:600':''}">Due ${esc(t.due)}${t.due<'2026-10-18'?' · overdue':''} · from ${esc(P(t.by).first)}</span></span></label>`).join('')
+      ||'<p class="sm muted">All clear.</p>'}
+  </div></div>
+  ${doneT.length?`<div class="card"><div class="hd"><h2>Done</h2></div><div class="bd" style="display:flex;flex-direction:column;gap:10px">
+    ${doneT.map(t=>`<label class="check"><input type="checkbox" checked data-act="task" data-v="${t.id}"><span class="sm" style="text-decoration:line-through;color:var(--fg-faint)">${esc(t.title)}</span></label>`).join('')}
+  </div></div>`:''}`;
+}
+
+/* ============================= COACH ============================= */
+function vTeam(){
+  const c7 = cycSlots('c07'), c6 = cycSlots('c06');
+  const bookedN = c7.filter(s=>s.who).length;
+  const attended = c6.filter(s=>s.attended).length;
+  return `
+  <div class="page-h"><h2>Team overview</h2><p>Booking and attendance only. Session content stays between the player and Winning Minds.</p></div>
+  <div class="grid3">
+    <div class="stat"><div class="v num">${bookedN}/${roster().length}</div><div class="k">Booked for Cycle 07</div></div>
+    <div class="stat"><div class="v num">${Math.round(attended/c6.length*100)}%</div><div class="k">Attendance, Cycle 06</div></div>
+    <div class="stat"><div class="v num">${c7.filter(s=>!s.who).length}</div><div class="k">Slots still open</div></div>
+  </div>
+  <div class="note info"><span>🔒</span><div>You see names, times and attendance. Notes, tasks, files and messages between a player and Winning Minds are not visible to coaching staff.</div></div>
+  <div class="card"><div class="hd"><h2>Cycle 07 · Oct 28–29</h2></div><div class="list">
+    ${roster().map(p=>{
+      const s = c7.find(x=>x.who===p.id);
+      const was = c6.find(x=>x.who===p.id);
+      return `<div class="it"><div class="avatar">${inits(p.id)}</div>
+        <div class="grow"><div class="nm">${esc(full(p.id))}</div>
+          <div class="xs muted">${was?(was.attended?'Attended Cycle 06':'Missed Cycle 06'):'No Cycle 06 session'}</div></div>
+        ${s?`<div class="xs num" style="text-align:right">${usDay(s.at)}<br><span class="muted">${usTime(s.at)}</span></div><span class="pill booked">Booked</span>`
+           :`<span class="pill warn">Not booked</span>`}</div>`;
+    }).join('')}
+  </div></div>`;
+}
+
+/* ============================= chat ============================= */
+function chatBlock(who, side){
+  const t = thread(who);
+  const meId = ME[state.role];
+  return `<div class="chat" id="chat">
+    ${t.msgs.map(m=>{
+      const mine = (side==='wm') ? P(m.from).role==='admin' : m.from===meId;
+      const fl = m.file ? files.find(x=>x.id===m.file) : null;
+      return `<div class="msg ${mine?'me':'them'}">
+        <div class="bub">${esc(m.text)}${fl?`<div class="attach">📎 <span class="trunc">${esc(fl.name)}</span><span class="xs" style="opacity:.75">${esc(fl.size)}</span></div>`:''}</div>
+        <div class="meta num">${esc(P(m.from).first)} · ${state.role==='player'?usTime(m.at)+' '+usDay(m.at):czTime(m.at)+' '+czDay(m.at)}</div>
+      </div>`;
+    }).join('')||'<p class="sm muted">No messages yet.</p>'}
+  </div>
+  <div class="composer">
+    <textarea id="cm" rows="1" placeholder="Write a message…"></textarea>
+    <button class="btn" data-act="attach">📎</button>
+    <button class="btn primary" data-act="send" data-v="${who}">Send</button>
+  </div>`;
+}
+
+function vMessages(){
+  if (state.role==='player') {
+    return `<div class="page-h"><h2>Messages</h2><p>Direct line to Michal and Milan. Teammates cannot see this.</p></div>
+      <div class="card">${chatBlock(ME.player,'player')}</div>`;
+  }
+  if (state.role==='coach') {
+    return `<div class="page-h"><h2>Messages</h2><p>Your thread with Winning Minds.</p></div>
+      <div class="card">${chatBlock('c1','coach')}</div>`;
+  }
+  const people_ = people.filter(p=>p.role!=='admin' && p.status==='active');
+  return `
+  <div class="page-h"><h2>Messages</h2><p>One thread per person.</p></div>
+  <div class="grid2" style="grid-template-columns:minmax(220px,280px) minmax(0,1fr)">
+    <div class="card"><div class="bd tight"><div class="list">
+      ${people_.map(p=>{
+        const t = threads.find(x=>x.who===p.id);
+        const last = t && t.msgs[t.msgs.length-1];
+        const waiting = last && last.from===p.id;
+        return `<div class="it click" data-act="chat" data-v="${p.id}" style="${state.chat===p.id?'background:var(--accent-soft)':''}">
+          <div class="avatar">${inits(p.id)}</div>
+          <div class="grow"><div class="nm trunc">${esc(full(p.id))}</div>
+            <div class="xs muted trunc">${last?esc(last.text):'No messages'}</div></div>
+          ${waiting?`<span class="pill booked">New</span>`:''}</div>`;
+      }).join('')}
+    </div></div></div>
+    <div class="card"><div class="hd"><h2>${esc(full(state.chat))}</h2>
+      <span class="sub">${esc(P(state.chat).role==='coach'?P(state.chat).title:'Player')}</span>
+      ${P(state.chat).role==='player'?`<button class="btn sm ghost" style="margin-left:auto" data-act="openp" data-v="${state.chat}">Open profile</button>`:''}
+      </div>${chatBlock(state.chat,'wm')}</div>
+  </div>`;
+}
+
+/* ============================= render ============================= */
+function render(){
+  const meId = ME[state.role], me = P(meId);
+  document.getElementById('who-name').textContent =
+    state.role==='admin' ? me.first+' · Winning Minds' :
+    state.role==='coach' ? me.first+' '+me.last+' · Coach' : me.first+' '+me.last+' · Player';
+  document.getElementById('who-av').textContent = inits(meId);
+  document.querySelectorAll('[data-act="role"]').forEach(b=>b.setAttribute('aria-pressed', String(b.dataset.v===state.role)));
+
+  const views = VIEWS[state.role];
+  if (!views.some(v=>v[0]===state.view)) state.view = views[0][0];
+  document.getElementById('rail').innerHTML = views.map(([id,label,ico])=>{
+    const n = id==='today' ? pendingCount() : 0;
+    return `<button data-act="go" data-v="${id}" ${state.view===id?'aria-current="page"':''}><span class="ico">${ico}</span>${label}${n?`<span class="count num">${n}</span>`:''}</button>`;
+  }).join('');
+
+  const map = {
+    'admin:today':vToday,'admin:schedule':vSchedule,'admin:people':vPeople,'admin:messages':vMessages,'admin:library':vLibrary,'admin:setup':vSetup,
+    'player:home':vHome,'player:messages':vMessages,'player:tasks':vTasks,'player:library':vLibrary,
+    'coach:team':vTeam,'coach:messages':vMessages,
+  };
+  document.getElementById('main').innerHTML = (map[state.role+':'+state.view]||(()=>''))() + (state.role==='player'?modal():'');
+  const c = document.getElementById('chat'); if (c) c.scrollTop = c.scrollHeight;
+  previewSlot();
+}
+
+function previewSlot(){
+  const d = document.getElementById('ns-date'), t = document.getElementById('ns-time'), out = document.getElementById('ns-preview');
+  if (!d||!t||!out) return;
+  const [y,m,dd]=d.value.split('-').map(Number), [hh,mi]=t.value.split(':').map(Number);
+  if (!y||!hh&&hh!==0) { out.textContent='—'; return; }
+  const iso = zonedToUTC(y,m,dd,hh,mi,TZ_CZ);
+  out.innerHTML = `<b>${czDay(iso)} ${czTime(iso)}</b> in Prague is <b>${usDay(iso)} ${usTime(iso)}</b> in Madison — ${gapHours(iso)} hours apart that week.`;
+}
+
+/* ============================= actions ============================= */
+document.addEventListener('click', e=>{
+  const el = e.target.closest('[data-act]'); if(!el) return;
+  const a = el.dataset.act, v = el.dataset.v;
+
+  if (a==='role'){ state.role=v; state.open=null; state.confirm=null; state.view=VIEWS[v][0][0]; render(); return; }
+  if (a==='go'){ state.view=v; state.open=null; state.confirm=null; render(); return; }
+  if (a==='cycle'){ state.cycle=v; render(); return; }
+  if (a==='openp'){ state.open=v; state.view='people'; render(); return; }
+  if (a==='closep'){ state.open=null; render(); return; }
+  if (a==='chat'){ state.chat=v; state.view='messages'; state.open=null; render(); return; }
+
+  if (a==='approve'){ const p=P(v); const sel=document.querySelector(`[data-act="setrole"][data-v="${v}"]`); if(sel) p.role=sel.value; p.status='active'; toast(p.first+' approved — they can sign in now'); render(); return; }
+  if (a==='decline'){ const p=P(v); p.status='declined'; people.splice(people.indexOf(p),1); toast('Request declined'); render(); return; }
+
+  if (a==='week'){ state.week=addDays(state.week, 7*(+v)); render(); return; }
+  if (a==='weekjump'){ const [y,m,d]=v.split('-').map(Number); state.week={y,m,d}; render(); return; }
+  if (a==='askbook'){ state.confirm={type:'book', id:v}; render(); return; }
+  if (a==='askrelease'){ state.confirm={type:'release', id:v}; render(); return; }
+  if (a==='closem'){ if (el.classList.contains('scrim') && e.target!==el) return; state.confirm=null; render(); return; }
+  if (a==='dobook'){ const s=slots.find(x=>x.id===v);
+    const prev=slots.find(x=>x.cycle===s.cycle && x.who===ME.player); if(prev) prev.who=null;
+    s.who=ME.player; state.confirm=null; toast('Booked · '+usDay(s.at)+' at '+usTime(s.at)); render(); return; }
+  if (a==='dorelease'){ const s=slots.find(x=>x.id===v); s.who=null; state.confirm=null; toast('Slot released — pick another one'); render(); return; }
+
+  if (a==='book'){ const s=slots.find(x=>x.id===v);
+    const prev = slots.find(x=>x.cycle===s.cycle && x.who===ME.player); if(prev) prev.who=null;
+    s.who=ME.player; toast('Booked · '+usDay(s.at)+' '+usTime(s.at)); render(); return; }
+  if (a==='release'){ const s=slots.find(x=>x.id===v); const n=s.who?P(s.who).first:''; s.who=null; toast(state.role==='player'?'Slot released — pick another one':'Released '+n+"'s slot"); render(); return; }
+
+  if (a==='savelink'){ const inp=document.querySelector(`[data-link="${v}"]`); const s=slots.find(x=>x.id===v);
+    if(!inp.value.trim()){ toast('Paste a Meet link first'); return; } s.meet=inp.value.trim(); toast('Link saved'); render(); return; }
+  if (a==='copy'){ const s=slots.find(x=>x.id===v);
+    (navigator.clipboard?.writeText(s.meet)||Promise.reject()).then(()=>toast('Link copied')).catch(()=>toast(s.meet)); return; }
+  if (a==='delslot'){ slots.splice(slots.findIndex(x=>x.id===v),1); toast('Slot removed'); render(); return; }
+  if (a==='addslot'){
+    const d=document.getElementById('ns-date').value, t=document.getElementById('ns-time').value;
+    if(!d||!t){ toast('Pick a date and time'); return; }
+    const [y,m,dd]=d.split('-').map(Number), [hh,mi]=t.split(':').map(Number);
+    slots.push({id:'s'+(++slotSeq), cycle:state.cycle, at:zonedToUTC(y,m,dd,hh,mi,TZ_CZ),
+      dur:+document.getElementById('ns-dur').value||45, meet:document.getElementById('ns-meet').value.trim(), who:null});
+    toast('Slot added'); render(); return; }
+  if (a==='publish'){ const c=cycles.find(x=>x.id===v); c.status='open'; c.note='Booking open'; toast('Players can now book Cycle '+c.n); render(); return; }
+  if (a==='nudge'){ toast('Reminder emailed to players without a slot'); return; }
+  if (a==='join'){ toast('Opens 10 minutes before the call'); return; }
+  if (a==='dl'){ toast('Opens in the real app'); return; }
+  if (a==='attach'){ toast('File picker — attaches to this message'); return; }
+
+  if (a==='send'){ const ta=document.getElementById('cm'); const txt=ta.value.trim(); if(!txt){ta.focus();return;}
+    thread(v).msgs.push({from:ME[state.role], at:new Date().toISOString(), text:txt}); render(); return; }
+
+  if (a==='addnote'){ const ta=document.getElementById('np-note'); const txt=ta.value.trim(); if(!txt){ta.focus();return;}
+    notes.unshift({id:'n'+Date.now(), who:v, at:'2026-10-18', by:ME.admin, text:txt}); toast('Note saved'); render(); return; }
+  if (a==='addtask'){ const i=document.getElementById('np-task'); const txt=i.value.trim(); if(!txt){i.focus();return;}
+    tasks.push({id:'t'+Date.now(), who:v, title:txt, due:document.getElementById('np-due').value, done:false, by:ME.admin});
+    toast('Task assigned to '+P(v).first); render(); return; }
+  if (a==='upload'){ const n=document.getElementById('up-name').value.trim(); if(!n){toast('Give the file a name');return;}
+    files.unshift({id:'f'+Date.now(), name:n, size:'—', by:ME.admin, at:'2026-10-18', to:document.getElementById('up-to').value});
+    toast('File added'); render(); return; }
+});
+
+document.addEventListener('change', e=>{
+  const el = e.target.closest('[data-act="task"]'); if(!el) return;
+  const t = tasks.find(x=>x.id===el.dataset.v); t.done = el.checked;
+  toast(t.done?'Marked done':'Reopened'); render();
+});
+document.addEventListener('input', e=>{ if(e.target.id==='ns-date'||e.target.id==='ns-time') previewSlot(); });
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape' && state.confirm){ state.confirm=null; render(); return; }
+  if(e.target.id==='cm' && e.key==='Enter' && !e.shiftKey){ e.preventDefault();
+    document.querySelector('[data-act="send"]')?.click(); }
+});
+
+clocks(); setInterval(clocks, 20000);
+render();
+</script>
