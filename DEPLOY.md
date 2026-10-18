@@ -61,16 +61,29 @@ Done once already; pushing to `main` does it automatically from now on.
 
 ## 4. Point the domain — **you**
 
-In Vercel, add `winningmindsperformance.com` and `www` to the project.
-Vercel shows the exact records. In the Webglobe DNS editor:
+Both names are already added to the Vercel project and ownership is
+verified. All that is left is the DNS, in the Webglobe editor:
 
-- `@` → **A** record → the address Vercel gives
-- `www` → **CNAME** → the target Vercel gives
+| Host | Type | Value |
+| --- | --- | --- |
+| `@` | **A** | `216.198.79.1` |
+| `www` | **CNAME** | `9514fde62d631713.vercel-dns-017.com.` |
 
-Leave MX records alone if email runs on that domain — changing A and CNAME
-does not affect mail.
+`@` currently points at `195.181.249.108`, the Webglobe webhosting —
+replace that value. `www` is an A record today; delete it and add the
+CNAME in its place, as a host cannot have both.
 
-DNS can take a few hours. Vercel issues the certificate once it resolves.
+**Leave the MX records and the two SPF `TXT` records exactly as they are.**
+Mail for the domain runs on Webglobe and nothing here touches it. For the
+same reason do not switch the nameservers to Vercel, even though Vercel
+suggests it — that would move the mail records too.
+
+DNS can take a few hours. Vercel issues the certificate on its own once
+the records resolve. To watch it:
+
+```bash
+vercel domains verify winningmindsperformance.com
+```
 
 ## 5. Tell Supabase the new address — **you**
 
