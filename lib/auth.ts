@@ -15,6 +15,8 @@ export type Profile = {
   title: string | null
   /** The one account that cannot be demoted or edited by another admin. */
   is_owner: boolean
+  /** When she last opened her messages; null means never. */
+  messages_seen_at: string | null
   created_at: string
 }
 

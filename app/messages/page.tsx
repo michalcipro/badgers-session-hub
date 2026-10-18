@@ -3,6 +3,7 @@ import { Chat } from '@/app/_components/Chat'
 import { createClient } from '@/lib/supabase/server'
 import { requireActive } from '@/lib/auth'
 import { loadRoster, loadThread } from '@/lib/hub'
+import { markMessagesSeen } from '@/lib/badges'
 import { TZ_US } from '@/lib/time'
 
 export default async function MyMessages() {
@@ -15,6 +16,9 @@ export default async function MyMessages() {
   const supabase = await createClient()
   const roster = await loadRoster(supabase)
   const messages = await loadThread(supabase, me.id, roster)
+
+  // Opening the page is what reading is, so the count clears here.
+  await markMessagesSeen(supabase, me)
 
   return (
     <Shell profile={me}>

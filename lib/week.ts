@@ -1,3 +1,4 @@
+import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   addDays, dayStart, minutesInDay, mondayOf, ymd,
   type CalDate,
@@ -55,4 +56,31 @@ export function hourRange(
     end = Math.max(end, Math.ceil(to / 60))
   }
   return [Math.max(0, start), Math.min(24, end)]
+}
+
+/**
+ * The week to open on when nobody asked for one: this one if it still
+ * holds a time, otherwise the first one ahead that does.
+ *
+ * Landing on an empty grid is a bad first impression and a worse
+ * instruction — it looks like there is nothing rather than like there is
+ * something one tap to the right.
+ */
+export async function openingWeek(supabase: SupabaseClient, tz: string): Promise<CalDate> {
+  const now = new Date().toISOString()
+  const thisWeek = mondayOf(ymd(now, tz))
+
+  const { data } = await supabase
+    .from('slots')
+    .select('starts_at')
+    .eq('kind', 'player')
+    .gt('starts_at', now)
+    .order('starts_at')
+    .limit(1)
+
+  const first = (data ?? [])[0]?.starts_at as string | undefined
+  if (!first) return thisWeek
+
+  const week = mondayOf(ymd(first, tz))
+  return dayStart(week, tz) > dayStart(thisWeek, tz) ? week : thisWeek
 }

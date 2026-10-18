@@ -4,13 +4,14 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 export type NavLink = { href: string; label: string }
+export type Badges = Record<string, number | true>
 
 /**
  * Which tab is lit comes from the address bar, not from each page
  * remembering to say so — one page forgot, and nothing was ever lit.
  * A child page like /admin/players/[id] lights its parent.
  */
-export function Nav({ links }: { links: NavLink[] }) {
+export function Nav({ links, badges = {} }: { links: NavLink[]; badges?: Badges }) {
   const path = usePathname()
 
   const current = links
@@ -26,6 +27,11 @@ export function Nav({ links }: { links: NavLink[] }) {
           aria-current={l.href === current?.href ? 'page' : undefined}
         >
           {l.label}
+          {badges[l.href] ? (
+            <span className="tag" aria-label={`${badges[l.href]} waiting`}>
+              {badges[l.href] === true ? '' : badges[l.href]}
+            </span>
+          ) : null}
         </Link>
       ))}
     </nav>

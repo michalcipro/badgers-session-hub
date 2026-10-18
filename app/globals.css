@@ -232,6 +232,11 @@ input[type=file] {
   border: 1px solid transparent; display: block; width: calc(100% - 4px);
 }
 .cal-ev .t { font-weight: 700; display: block; font-variant-numeric: tabular-nums }
+/* A half-hour block is 30px tall: one line that clips, never two that wrap. */
+.cal-ev .t.one {
+  font-size: 10.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  display: flex; align-items: center; gap: 4px;
+}
 .cal-ev .n { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .cal-ev.free { background: var(--good-soft); color: var(--good); border-style: dashed; border-color: var(--good) }
 .cal-ev.free.can { cursor: pointer }
@@ -258,6 +263,30 @@ input[type=file] {
 /* A confirmed coach consultation: occupies the calendar, but is not a player's call. */
 .cal-ev.consult { background: var(--info-soft); color: var(--info); border: 1px solid currentColor }
 
+/* The same week as a list, which is what fits on a phone. The grid and
+   the list are both rendered and one of them is shown. */
+.cal-days { display: none; border-top: 1px solid var(--line) }
+.cal-days .day + .day { border-top: 1px solid var(--line) }
+.cal-days .dh { display: flex; align-items: baseline; gap: 9px; padding: 13px 18px 2px }
+.cal-days .dh .dw { font-family: var(--display); font-weight: 700; font-size: 14.5px; letter-spacing: -.015em }
+.cal-days .dh .dd { font-size: 12px; color: var(--fg-muted) }
+.cal-days .times { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 18px 16px }
+.cal-days .slot {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 44px;
+  padding: 0 13px; border-radius: 11px; font-size: 14px; font-weight: 600;
+  border: 1px dashed var(--good); background: var(--good-soft); color: var(--good);
+  cursor: pointer; font-variant-numeric: tabular-nums;
+}
+.cal-days .slot .w { font-weight: 500; font-size: 12.5px; opacity: .85 }
+.cal-days .slot.mine { background: var(--accent); border: 1px solid var(--accent); color: #fff }
+.cal-days .slot.taken { background: var(--accent); border: 1px solid var(--accent); color: #fff; cursor: default }
+.cal-days .slot.past { background: var(--surface-2); border: 1px solid var(--line); color: var(--fg-faint); cursor: default }
+
+@media (max-width: 700px) {
+  .calwrap.wide-only { display: none }
+  .cal-days { display: block }
+}
+
 .weeknav { display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
 .weeknav .lbl { font-family: var(--display); font-weight: 700; font-size: 14.5px; font-variant-numeric: tabular-nums; letter-spacing: -.015em }
 .weeknav a { text-decoration: none; color: inherit }
@@ -278,6 +307,14 @@ input[type=file] {
   transition: background .12s ease, color .12s ease;
 }
 .nav a:hover { background: var(--surface-2); color: var(--fg) }
+/* How many of something is waiting behind a tab. */
+.nav .tag {
+  display: inline-grid; place-items: center; min-width: 18px; height: 18px;
+  margin-left: 6px; padding: 0 5px; border-radius: 999px;
+  background: var(--accent); color: #fff; font-size: 11px; font-weight: 700;
+  font-variant-numeric: tabular-nums; vertical-align: 1px;
+}
+.nav a[aria-current="page"] .tag { background: var(--surface); color: var(--fg) }
 /* Black, not red: the red is reserved for things that are actually live. */
 .nav a[aria-current="page"] { background: var(--fg); color: var(--surface) }
 

@@ -3,8 +3,8 @@
 import Link from 'next/link'
 import { useActionState, useEffect, useState } from 'react'
 import {
-  addDays, calFmt, czTime, dayKey, gapHours, hourLabel,
-  minuteLabel, minutesInDay, timeIn, usDay, usTime, type CalDate,
+  addDays, calFmt, czTime, dayKey, gapHours, hourLabel, minuteLabel,
+  minutesInDay, mondayOf, timeIn, usDay, usTime, ymd, type CalDate,
 } from '@/lib/time'
 import type { SlotRow } from '@/lib/week'
 import { LANES } from '@/lib/lanes'
@@ -98,6 +98,9 @@ export function WeekCalendar(props: Props) {
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   const prev = dayKey(addDays(weekStart, -7))
   const next = dayKey(addDays(weekStart, 7))
+  // Named explicitly, because without ?week= the page may well have
+  // opened somewhere else on purpose.
+  const thisWeek = dayKey(mondayOf(ymd(nowISO, tz)))
   const label =
     `${calFmt(weekStart, { month: 'short', day: 'numeric' })} – ` +
     `${calFmt(addDays(weekStart, 6), { month: 'short', day: 'numeric' })}`
@@ -196,7 +199,7 @@ export function WeekCalendar(props: Props) {
     const who = s.booked_name ?? (past ? 'Not used' : 'Free')
     const body =
       h < COMPACT_H ? (
-        <span className="t" style={{ fontSize: 10.5 }}>{timeIn(s.starts_at, tz)} · {who}</span>
+        <span className="t one">{timeIn(s.starts_at, tz)} · {who}</span>
       ) : (
         <>
           <span className="t">{timeIn(s.starts_at, tz)}</span>
@@ -235,17 +238,39 @@ export function WeekCalendar(props: Props) {
     )
   }
 
-  /** A player sees one block per time, and how many places are in it. */
-  function playerBlock(g: Group, p: { col: number; cols: number }) {
-    const style = box(p, g.starts_at, g.duration_min)
+  /** What a time amounts to for this player, read once and used twice. */
+  function readGroup(g: Group) {
     const past = new Date(g.starts_at).getTime() <= now
-    const h = height(g.duration_min)
-
     const total = g.slots.length
     const taken = g.slots.filter((s) => s.booking_id)
     const free = g.slots.filter((s) => !s.booking_id)
     const mineHere = g.slots.find((s) => s.booked_by === meId)
-    const others = taken.filter((s) => s.booked_by !== meId).map((s) => s.booked_name).filter(Boolean)
+    const others = taken
+      .filter((s) => s.booked_by !== meId)
+      .map((s) => s.booked_name)
+      .filter((n): n is string => Boolean(n))
+
+    const title =
+      `${czTime(g.starts_at)} in Prague` +
+      (total > 1 ? ` · ${free.length} of ${total} places free` : '') +
+      (others.length > 0 ? ` · ${others.join(', ')}` : '')
+
+    const open = () => {
+      if (past) return
+      if (mineHere) setConfirm({ slot: mineHere, places: total, otherName: others[0] ?? null })
+      else if (free.length > 0) {
+        setConfirm({ slot: free[0], places: total, otherName: others[0] ?? null })
+      }
+    }
+
+    return { past, total, taken, free, mineHere, others, title, open }
+  }
+
+  /** A player sees one block per time, and how many places are in it. */
+  function playerBlock(g: Group, p: { col: number; cols: number }) {
+    const style = box(p, g.starts_at, g.duration_min)
+    const h = height(g.duration_min)
+    const { past, total, taken, free, mineHere, others, title, open } = readGroup(g)
 
     const long = mineHere
       ? 'Your call'
@@ -257,13 +282,13 @@ export function WeekCalendar(props: Props) {
             ? `${free.length} of ${total} left`
             : others.join(' · ')
 
-    const short = mineHere ? 'Yours' : past ? 'Past' : free.length > 0 ? `${free.length} free` : 'Taken'
-
     const pips = <Pips total={total} taken={taken.length} />
     const body =
       h < COMPACT_H ? (
-        <span className="t" style={{ fontSize: 10.5 }}>
-          {timeIn(g.starts_at, tz)} · {short} {pips}
+        // At this height the dots say what the words would, and words
+        // that do not fit wrap into nonsense.
+        <span className="t one">
+          {timeIn(g.starts_at, tz)}{mineHere ? ' · Yours' : ''} {pips}
         </span>
       ) : (
         <>
@@ -271,10 +296,6 @@ export function WeekCalendar(props: Props) {
           <span className="n">{long}</span>
         </>
       )
-
-    const title =
-      `${czTime(g.starts_at)} in Prague` +
-      (total > 1 ? ` · ${free.length} of ${total} places free` : '')
 
     if (past) {
       return (
@@ -285,7 +306,7 @@ export function WeekCalendar(props: Props) {
     if (mineHere) {
       return (
         <button key={g.id} type="button" className="cal-ev mine" style={style} title={title}
-          onClick={() => setConfirm({ slot: mineHere, places: total, otherName: others[0] ?? null })}>
+          onClick={open}>
           {body}
         </button>
       )
@@ -299,7 +320,7 @@ export function WeekCalendar(props: Props) {
           className={`cal-ev free can${total > 1 ? ' pair' : ''}`}
           style={style}
           title={title}
-          onClick={() => setConfirm({ slot: free[0], places: total, otherName: others[0] ?? null })}
+          onClick={open}
         >
           {body}
         </button>
@@ -309,6 +330,60 @@ export function WeekCalendar(props: Props) {
     return (
       <div key={g.id} className={`cal-ev taken${total > 1 ? ' pair' : ''}`} style={style} title={title}>
         {body}
+      </div>
+    )
+  }
+
+  /**
+   * The same week as a list, for a phone. A seven-column grid on a 375px
+   * screen shows three and a half days and hides the rest behind a
+   * sideways scroll inside a page that already scrolls down — so the
+   * days go under each other and the times become things to tap.
+   */
+  function phoneList() {
+    const rows = days
+      .map((d) => ({ d, groups: groupByTime(slotsOn(d)) }))
+      .filter((x) => x.groups.length > 0)
+
+    if (rows.length === 0) {
+      return (
+        <div className="cal-days">
+          <p className="bd sm muted">Nothing offered this week. Try the arrows above.</p>
+        </div>
+      )
+    }
+
+    return (
+      <div className="cal-days">
+        {rows.map(({ d, groups }) => (
+          <div className="day" key={dayKey(d)}>
+            <div className="dh">
+              <span className="dw">{calFmt(d, { weekday: 'long' })}</span>
+              <span className="dd num">{calFmt(d, { month: 'short', day: 'numeric' })}</span>
+            </div>
+            <div className="times">
+              {groups.map((g) => {
+                const { past, total, taken, free, mineHere, title, open } = readGroup(g)
+                const cls = past ? 'past' : mineHere ? 'mine' : free.length > 0 ? 'free' : 'taken'
+                const canTap = !past && (Boolean(mineHere) || free.length > 0)
+                const inner = (
+                  <>
+                    <span className="num">{timeIn(g.starts_at, tz)}</span>
+                    {mineHere ? <span className="w">Yours</span> : null}
+                    <Pips total={total} taken={taken.length} />
+                  </>
+                )
+                return canTap ? (
+                  <button key={g.id} type="button" className={`slot ${cls}`} title={title} onClick={open}>
+                    {inner}
+                  </button>
+                ) : (
+                  <div key={g.id} className={`slot ${cls}`} title={title}>{inner}</div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
       </div>
     )
   }
@@ -336,7 +411,9 @@ export function WeekCalendar(props: Props) {
             <Link className="btn sm" href={`${basePath}?week=${prev}`} aria-label="Previous week">←</Link>
             <span className="lbl">{label}</span>
             <Link className="btn sm" href={`${basePath}?week=${next}`} aria-label="Next week">→</Link>
-            <Link className="btn ghost sm" href={basePath}>This week</Link>
+            {dayKey(weekStart) !== thisWeek && (
+              <Link className="btn ghost sm" href={`${basePath}?week=${thisWeek}`}>This week</Link>
+            )}
           </div>
           <span className="sub num">
             {mode === 'admin'
@@ -350,7 +427,9 @@ export function WeekCalendar(props: Props) {
           )}
         </div>
 
-        <div className="calwrap">
+        {mode === 'player' && phoneList()}
+
+        <div className={`calwrap${mode === 'player' ? ' wide-only' : ''}`}>
           {/* The hour labels are laid out by CSS and the blocks by this
               component, so the row height has to come from one place or
               they drift apart an hour at a time. */}
@@ -426,7 +505,7 @@ export function WeekCalendar(props: Props) {
           <p className="xs muted">
             {mode === 'admin'
               ? 'Rows are your own Prague time. Click an empty square to offer it, click a green one to withdraw it. Players only ever see the green squares.'
-              : 'Times are yours in Madison; hover a time to see it in Prague. Tap a green time to take it — you confirm once and you are booked. Two dots mean two of us run calls then, so two of you can book the same time. Teammates see only each other’s names.'}
+              : 'Times are yours in Madison, and the Prague time is on the confirmation. Tap a green one to take it — you confirm once and you are booked. Two dots mean two of us run calls then, so two of you can have the same time. Teammates see only each other’s names.'}
           </p>
         </div>
       </div>

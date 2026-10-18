@@ -1,4 +1,6 @@
 import { signOut } from '@/app/actions'
+import { createClient } from '@/lib/supabase/server'
+import { loadBadges } from '@/lib/badges'
 import { Brand } from './Brand'
 import { Nav } from './Nav'
 import { initials, fullName, type Profile } from '@/lib/auth'
@@ -35,7 +37,7 @@ const LINKS: Record<Profile['role'], { href: string; label: string }[]> = {
   ],
 }
 
-export function Shell({
+export async function Shell({
   profile,
   children,
 }: {
@@ -43,6 +45,7 @@ export function Shell({
   children: React.ReactNode
 }) {
   const links = LINKS[profile.role]
+  const badges = await loadBadges(await createClient(), profile)
   return (
     <>
       <header className="top">
@@ -60,7 +63,7 @@ export function Shell({
         </div>
         {links.length > 1 && (
           <div className="top-in wrap" style={{ paddingTop: 0, paddingBottom: 10 }}>
-            <Nav links={links} />
+            <Nav links={links} badges={badges} />
           </div>
         )}
       </header>

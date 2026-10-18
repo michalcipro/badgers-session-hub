@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { requireActive } from '@/lib/auth'
 import { sessionMin } from '@/lib/settings'
 import { loadWeekSlots } from '@/lib/slots'
-import { hourRange, weekRange, weekStartFor } from '@/lib/week'
+import { hourRange, openingWeek, weekRange, weekStartFor } from '@/lib/week'
 import { TZ_US, czTime, usDay, usTime } from '@/lib/time'
 
 export default async function PlayerPage({
@@ -15,10 +15,12 @@ export default async function PlayerPage({
   const me = await requireActive('player')
   const { week } = await searchParams
 
-  const weekStart = weekStartFor(week, TZ_US)
-  const { fromISO, toISO } = weekRange(weekStart, TZ_US)
-
   const supabase = await createClient()
+
+  // Without ?week=, open where there is something to see rather than on
+  // whatever week today happens to fall in.
+  const weekStart = week ? weekStartFor(week, TZ_US) : await openingWeek(supabase, TZ_US)
+  const { fromISO, toISO } = weekRange(weekStart, TZ_US)
   const slots = await loadWeekSlots(supabase, fromISO, toISO, 'player', me.id)
 
   // The next call this player holds, whichever week it is in.
