@@ -17,7 +17,7 @@ export default async function MyMessages() {
   const messages = await loadThread(supabase, me.id, roster)
 
   return (
-    <Shell profile={me} current="/messages">
+    <Shell profile={me}>
       <div className="page-h">
         <h2>Messages</h2>
         <p>Your direct line to Michal and Milan. Nobody else can read this.</p>

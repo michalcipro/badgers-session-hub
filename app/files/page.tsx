@@ -11,7 +11,7 @@ export default async function MyFiles() {
   const files = await loadFiles(supabase, roster, { viewer: 'player' })
 
   return (
-    <Shell profile={me} current="/files">
+    <Shell profile={me}>
       <div className="page-h">
         <h2>Resources</h2>
         <p>Everything Winning Minds has shared with you.</p>

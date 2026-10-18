@@ -43,7 +43,7 @@ export default async function AdminMessages({
   }
 
   return (
-    <Shell profile={me} current="/admin/messages">
+    <Shell profile={me}>
       <div className="page-h">
         <h2>Messages</h2>
         <p>One thread per person. Nobody sees anyone else&rsquo;s.</p>

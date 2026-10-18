@@ -16,7 +16,7 @@ export default async function CoachPage() {
   }
 
   return (
-    <Shell profile={me} current="/coach">
+    <Shell profile={me}>
       <div className="page-h">
         <h2>Team overview</h2>
         <p>Who is booked and who turns up. What is said in a session stays between the player and Winning Minds.</p>

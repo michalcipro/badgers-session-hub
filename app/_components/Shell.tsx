@@ -1,5 +1,6 @@
-import Link from 'next/link'
 import { signOut } from '@/app/actions'
+import { Brand } from './Brand'
+import { Nav } from './Nav'
 import { initials, fullName, type Profile } from '@/lib/auth'
 
 const ROLE_LABEL: Record<Profile['role'], string> = {
@@ -36,11 +37,9 @@ const LINKS: Record<Profile['role'], { href: string; label: string }[]> = {
 
 export function Shell({
   profile,
-  current,
   children,
 }: {
   profile: Profile
-  current?: string
   children: React.ReactNode
 }) {
   const links = LINKS[profile.role]
@@ -48,13 +47,7 @@ export function Shell({
     <>
       <header className="top">
         <div className="top-in wrap">
-          <div className="mark">
-            <div className="dot">W</div>
-            <div>
-              <h1>Session Hub</h1>
-              <span>Winning Minds × Wisconsin Badgers Tennis</span>
-            </div>
-          </div>
+          <Brand href={links[0]?.href ?? '/'} />
           <div className="who">
             <span className="trunc">
               {fullName(profile)} · {ROLE_LABEL[profile.role]}
@@ -67,13 +60,7 @@ export function Shell({
         </div>
         {links.length > 1 && (
           <div className="top-in wrap" style={{ paddingTop: 0, paddingBottom: 10 }}>
-            <nav className="nav">
-              {links.map((l) => (
-                <Link key={l.href} href={l.href} aria-current={current === l.href ? 'page' : undefined}>
-                  {l.label}
-                </Link>
-              ))}
-            </nav>
+            <Nav links={links} />
           </div>
         )}
       </header>

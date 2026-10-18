@@ -14,7 +14,7 @@ export default async function MyTasks() {
   const open = tasks.filter((t) => !t.done_at).length
 
   return (
-    <Shell profile={me} current="/tasks">
+    <Shell profile={me}>
       <div className="page-h">
         <h2>Tasks</h2>
         <p>Set by Winning Minds between calls.</p>

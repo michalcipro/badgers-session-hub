@@ -22,7 +22,7 @@ export default async function StatsPage() {
   const noLink = sessions.filter((s) => !s.past && s.playerId && !s.hasLink).length
 
   return (
-    <Shell profile={me} current="/admin/stats">
+    <Shell profile={me}>
       <div className="page-h">
         <h2>Statistics</h2>
         <p>Counted from bookings and attendance. Nothing from inside a session is involved.</p>

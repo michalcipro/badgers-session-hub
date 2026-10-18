@@ -25,7 +25,7 @@ export default async function SchedulePage({
   const series = await loadSeries(supabase)
 
   return (
-    <Shell profile={me} current="/admin/schedule">
+    <Shell profile={me}>
       <div className="page-h">
         <h2>Your availability</h2>
         <p>Click a square to offer that time. Click it again to take it back.</p>

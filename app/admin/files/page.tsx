@@ -21,7 +21,7 @@ export default async function AdminFiles() {
   const people = ((profiles ?? []) as Profile[]).map((p) => ({ id: p.id, name: fullName(p) }))
 
   return (
-    <Shell profile={me} current="/admin/files">
+    <Shell profile={me}>
       <div className="page-h">
         <h2>Library</h2>
         <p>Share with the whole team, or with one player only.</p>

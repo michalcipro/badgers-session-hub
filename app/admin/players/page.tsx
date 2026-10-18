@@ -38,7 +38,7 @@ export default async function PlayersPage() {
   }
 
   return (
-    <Shell profile={me} current="/admin/players">
+    <Shell profile={me}>
       <div className="page-h">
         <h2>Players</h2>
         <p>Open a player for her notes, tasks, files and your conversation.</p>

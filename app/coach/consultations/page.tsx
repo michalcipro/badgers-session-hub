@@ -22,7 +22,7 @@ export default async function CoachConsultations() {
   })
 
   return (
-    <Shell profile={me} current="/coach/consultations">
+    <Shell profile={me}>
       <div className="page-h">
         <h2>Consultations</h2>
         <p>Your own calls with Winning Minds, separate from the players&rsquo; times.</p>

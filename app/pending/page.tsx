@@ -1,3 +1,4 @@
+import { BrandLarge } from '@/app/_components/Brand'
 import { redirect } from 'next/navigation'
 import { signOut } from '@/app/actions'
 import { currentProfile } from '@/lib/auth'
@@ -13,13 +14,7 @@ export default async function PendingPage() {
   return (
     <div className="auth wrap">
       <div className="auth-box">
-        <div className="mark">
-          <div className="dot">W</div>
-          <div>
-            <h1>Session Hub</h1>
-            <span>Winning Minds × Wisconsin Badgers Tennis</span>
-          </div>
-        </div>
+        <BrandLarge />
 
         <div className="card">
           <div className="bd" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>

@@ -49,7 +49,7 @@ export default async function PlayerPage({
   const missed = pastCalls.filter((b) => b.attended === false).length
 
   return (
-    <Shell profile={me} current="/player">
+    <Shell profile={me}>
       <div className="page-h">
         <h2>Hi, {me.first_name}</h2>
         <p>All times here are shown in Madison time.</p>

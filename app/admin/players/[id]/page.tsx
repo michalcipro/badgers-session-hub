@@ -43,7 +43,7 @@ export default async function PlayerDetail({
   const now = Date.now()
 
   return (
-    <Shell profile={me} current="/admin/players">
+    <Shell profile={me}>
       <div className="row">
         <Link className="btn ghost sm" href="/admin/players">← All players</Link>
       </div>

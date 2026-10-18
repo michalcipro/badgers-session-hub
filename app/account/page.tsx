@@ -12,7 +12,7 @@ export default async function AccountPage() {
   const me = await requireActive()
 
   return (
-    <Shell profile={me} current="/account">
+    <Shell profile={me}>
       <div className="page-h">
         <h2>Your account</h2>
         <p>{fullName(me)} · {ROLE_TEXT[me.role]}{me.is_owner ? ' · owner' : ''}</p>

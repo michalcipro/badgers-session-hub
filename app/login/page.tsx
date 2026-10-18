@@ -1,5 +1,6 @@
 'use client'
 
+import { BrandLarge } from '@/app/_components/Brand'
 import Link from 'next/link'
 import { useActionState } from 'react'
 import { signIn, type FormState } from '@/app/actions'
@@ -10,13 +11,7 @@ export default function LoginPage() {
   return (
     <div className="auth wrap">
       <div className="auth-box">
-        <div className="mark">
-          <div className="dot">W</div>
-          <div>
-            <h1>Session Hub</h1>
-            <span>Winning Minds × Wisconsin Badgers Tennis</span>
-          </div>
-        </div>
+        <BrandLarge />
 
         <div className="card">
           <div className="bd">
