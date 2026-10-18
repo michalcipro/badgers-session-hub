@@ -59,7 +59,7 @@ export function ConsultationRequest({
               Length
               {/* Not a choice: every call is the same length, set by
                   Winning Minds, so a consultation cannot drift from it. */}
-              <p className="sm num" style={{ paddingBlock: 10 }}>{lengthMin} minutes</p>
+              <span className="val num">{lengthMin} minutes</span>
             </div>
           </div>
           <label className="fld" style={{ marginTop: 12 }}>

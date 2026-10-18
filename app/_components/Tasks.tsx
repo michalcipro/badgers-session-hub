@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import { assignTask, deleteTask, toggleTask, type ActionResult } from '@/app/hub-actions'
+import { dateLabel, daysBetween } from '@/lib/time'
 
 export type TaskRow = {
   id: string
@@ -11,6 +12,15 @@ export type TaskRow = {
 }
 
 const today = () => new Date().toISOString().slice(0, 10)
+
+/** "Due today" beats "Due 2026-10-25" when the point is whether to hurry. */
+function dueLabel(key: string): string {
+  const days = daysBetween(today(), key)
+  if (days < 0) return `Was due ${dateLabel(key)}`
+  if (days === 0) return 'Due today'
+  if (days === 1) return 'Due tomorrow'
+  return `Due ${dateLabel(key)}`
+}
 
 export function Tasks({
   tasks,
@@ -57,7 +67,7 @@ export function Tasks({
               className="xs"
               style={overdue ? { color: 'var(--accent)', fontWeight: 600 } : { color: 'var(--fg-faint)' }}
             >
-              Due {t.due_on}{overdue ? ' · overdue' : ''}
+              {dueLabel(t.due_on)}
             </div>
           )}
         </div>

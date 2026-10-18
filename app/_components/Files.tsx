@@ -1,7 +1,8 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
 import { deleteFile, uploadFile, type ActionResult } from '@/app/hub-actions'
+import { dateLabel } from '@/lib/time'
 
 export type FileRow = {
   id: string
@@ -33,6 +34,15 @@ export function Files({
   const [upState, upAction, uploading] = useActionState<ActionResult, FormData>(uploadFile, {})
   const [delState, delAction] = useActionState<ActionResult, FormData>(deleteFile, {})
   const error = upState.error ?? delState.error
+  const [picked, setPicked] = useState<string | null>(null)
+  const formRef = useRef<HTMLFormElement>(null)
+
+  useEffect(() => {
+    if (upState.ok) {
+      formRef.current?.reset()
+      setPicked(null)
+    }
+  }, [upState.ok])
 
   return (
     <>
@@ -54,7 +64,7 @@ export function Files({
                   {f.name}
                 </a>
                 <div className="xs muted num">
-                  {size(f.size_bytes)}{f.size_bytes ? ' · ' : ''}{f.created_at.slice(0, 10)}
+                  {size(f.size_bytes)}{f.size_bytes ? ' · ' : ''}{dateLabel(f.created_at.slice(0, 10))}
                 </div>
               </div>
               {canManage && (
@@ -70,11 +80,21 @@ export function Files({
 
       {canManage && (
         <div className="bd" style={{ borderTop: '1px solid var(--line)' }}>
-          <form action={upAction} className="row" style={{ alignItems: 'flex-end' }}>
-            <label className="fld" style={{ flex: '1 1 200px' }}>
+          <form action={upAction} className="row" style={{ alignItems: 'flex-end' }} ref={formRef}>
+            {/* The browser's own file button comes out in whatever language
+                the computer is set to, in the middle of an English page. */}
+            <div className="fld" style={{ flex: '1 1 200px' }}>
               File
-              <input type="file" name="file" required />
-            </label>
+              <label className="clip pick-file">
+                <span aria-hidden>📎</span>
+                <span className="trunc">{picked ?? 'Choose a file'}</span>
+                <input
+                  type="file"
+                  name="file"
+                  onChange={(e) => setPicked(e.target.files?.[0]?.name ?? null)}
+                />
+              </label>
+            </div>
             {fixedPlayerId ? (
               <input type="hidden" name="visible_to" value={fixedPlayerId} />
             ) : (

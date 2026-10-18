@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useRef, useEffect } from 'react'
+import { dateLabel } from '@/lib/time'
 import { addNote, deleteNote, type ActionResult } from '@/app/hub-actions'
 
 export type NoteRow = {
@@ -32,7 +33,7 @@ export function Notes({ notes, playerId }: { notes: NoteRow[]; playerId: string 
           <div key={n.id}>
             <div className="row" style={{ justifyContent: 'space-between', gap: 8 }}>
               <div className="xs faint num">
-                {n.created_at.slice(0, 10)} · {n.author_name}
+                {dateLabel(n.created_at.slice(0, 10))} · {n.author_name}
               </div>
               <form action={delAction}>
                 <input type="hidden" name="id" value={n.id} />

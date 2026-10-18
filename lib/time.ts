@@ -114,3 +114,16 @@ export function minuteLabel(minute: number, tz: string): string {
   const h12 = h % 12 === 0 ? 12 : h % 12
   return `${h12}:${m} ${h < 12 ? 'am' : 'pm'}`
 }
+
+/**
+ * A plain calendar date the way people write it: "Sat, Oct 25". A due
+ * date has no time and no zone, so it is read as the date it says.
+ */
+export const dateLabel = (key: string) =>
+  new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC', weekday: 'short', month: 'short', day: 'numeric',
+  }).format(new Date(`${key}T00:00:00Z`))
+
+/** Whole days from one plain date to another; negative is in the past. */
+export const daysBetween = (from: string, to: string) =>
+  Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000)

@@ -62,10 +62,15 @@ export default async function CoachPage() {
                   <div className="grow">
                     <div className="nm">{p.name}</div>
                     <div className="xs muted num">
-                      {p.attended} attended
-                      {p.missed > 0 && <span style={{ color: 'var(--warn)' }}> · {p.missed} missed</span>}
-                      {p.rate !== null && ` · ${p.rate}%`}
-                      {p.booked === 0 && 'no calls yet'}
+                      {p.booked === 0 ? (
+                        'No calls yet'
+                      ) : (
+                        <>
+                          {p.attended} attended
+                          {p.missed > 0 && <span style={{ color: 'var(--warn)' }}> · {p.missed} missed</span>}
+                          {p.rate !== null && ` · ${p.rate}%`}
+                        </>
+                      )}
                     </div>
                   </div>
                   {p.nextCall ? (
